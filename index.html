@@ -648,7 +648,7 @@
 
   <!-- ==================== CONTACT & LOCATION MODAL ==================== -->
   <div id="contact-modal" class="fixed inset-0 z-[10001] bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-gray-950 border border-yellow-500/40 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative my-auto">
+    <div class="bg-gray-950 border border-yellow-500/40 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative my-auto max-h-[94vh] overflow-y-auto">
       <button id="close-contact-btn" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white flex items-center justify-center font-bold">✕</button>
 
       <div class="text-center mb-4">
@@ -657,25 +657,45 @@
         <p class="text-yellow-400 font-bold text-xs">SUN FLAG FIREWORKS • SIVAKASI</p>
       </div>
 
-      <!-- Shop Location Image -->
-      <div class="mb-4 rounded-xl overflow-hidden border border-white/20 shadow-lg">
-        <img src="./Location_Pic.jpg" alt="Selvaganapathy Traders Shop Location" class="w-full h-44 object-cover">
+      <!-- Store Front Image & Google Maps Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <div>
+          <div class="text-xs font-bold text-gray-300 mb-1">🏬 Store Front:</div>
+          <div class="rounded-xl overflow-hidden border border-white/20 shadow-lg h-44">
+            <img src="./Location_Pic.jpg" alt="Selvaganapathy Traders Shop Location" class="w-full h-full object-cover">
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-gray-300 mb-1">📍 Google Maps Location:</div>
+          <div class="w-full h-44 rounded-xl overflow-hidden border border-white/20 shadow-lg">
+            <iframe
+              title="Selvaganapathy Traders Location"
+              src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d774.0211781897963!2d77.7807148!3d9.3559534!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b06c900012e23cf%3A0x765074c6264e55cd!2sSELVA%20GANAPATHY%20TRADERS!5e1!3m2!1sen!2sin!4v1753207962124!5m2!1sen!2sin"
+              width="100%"
+              height="100%"
+              style="border: 0;"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+        </div>
       </div>
 
       <!-- Address & Info -->
-      <div class="space-y-2.5 text-xs text-gray-300 mb-5">
+      <div class="space-y-2 text-xs text-gray-300 mb-4">
         <div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-900 border border-white/10">
           <span class="text-lg">📍</span>
           <div>
             <strong class="text-white block">Factory &amp; Sales Depot:</strong>
-            Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu, India.
+            Main Road, Kananjampatti, Sivakasi-Vembakkottai Road, Tamil Nadu, India.
           </div>
         </div>
 
         <div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-900 border border-white/10">
           <span class="text-lg">📞</span>
           <div>
-            <strong class="text-white block">Phone Lines:</strong>
+            <strong class="text-white block">Helpline Numbers:</strong>
             <div class="flex flex-wrap gap-2 mt-1">
               <a href="tel:6383144854" class="px-2.5 py-1 rounded bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-500/30 font-bold">📱 +91 6383144854</a>
               <a href="tel:9944087728" class="px-2.5 py-1 rounded bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-500/30 font-bold">📱 +91 99440 87728</a>
@@ -688,14 +708,6 @@
           <div>
             <strong class="text-white block">Official Email:</strong>
             <a href="mailto:selvaganapathytraders@gmail.com" class="text-pink-400 hover:underline">selvaganapathytraders@gmail.com</a>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-2.5 p-2.5 rounded-lg bg-gray-900 border border-white/10">
-          <span class="text-lg">🌐</span>
-          <div>
-            <strong class="text-white block">Official Website:</strong>
-            <a href="http://selvaganapathytraders.in" target="_blank" class="text-pink-400 hover:underline">http://selvaganapathytraders.in</a>
           </div>
         </div>
       </div>
@@ -713,11 +725,52 @@
   </div>
 
   <!-- ==================== FOOTER ==================== -->
-  <footer class="border-t border-white/10 bg-gray-950/90 text-gray-400 text-xs py-8 px-4 text-center">
-    <div class="max-w-7xl mx-auto space-y-3">
-      <div class="text-yellow-400 font-extrabold text-sm">SELVAGANAPATHY TRADERS - SUN FLAG FIREWORKS</div>
-      <p>Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu | Phone: +91 6383144854, +91 99440 87728 | Email: selvaganapathytraders@gmail.com</p>
-      <p class="text-[11px] text-gray-500">© 2026 Selvaganapathy Traders. All rights reserved. Festival of Lights.</p>
+  <footer id="footer" class="border-t border-white/10 bg-gray-950/95 text-gray-400 text-xs py-10 px-4">
+    <div class="max-w-7xl mx-auto space-y-6">
+      
+      <!-- Store Front & Google Maps Grid in Footer -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-white/10">
+        <div>
+          <h4 class="text-white font-bold text-sm mb-2 flex items-center gap-2">
+            <span>🏬</span> Visit Our Sivakasi Factory Store
+          </h4>
+          <div class="rounded-xl overflow-hidden border border-white/10 shadow-lg h-48">
+            <img src="./Location_Pic.jpg" alt="Selvaganapathy Traders Store Front" class="w-full h-full object-cover">
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-white font-bold text-sm mb-2 flex items-center gap-2">
+            <span>📍</span> Store Location (Google Maps)
+          </h4>
+          <div class="w-full h-48 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+            <iframe
+              title="Selvaganapathy Traders Location"
+              src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d774.0211781897963!2d77.7807148!3d9.3559534!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b06c900012e23cf%3A0x765074c6264e55cd!2sSELVA%20GANAPATHY%20TRADERS!5e1!3m2!1sen!2sin!4v1753207962124!5m2!1sen!2sin"
+              width="100%"
+              height="100%"
+              style="border: 0;"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safety Banner -->
+      <div class="bg-gradient-to-r from-red-950/60 to-orange-950/60 border border-red-500/30 rounded-xl p-3 text-center">
+        <p class="text-yellow-300 text-xs">
+          ⚠️ <strong>Safety First:</strong> Always follow fireworks safety guidelines. Keep water nearby. Adult supervision strictly required.
+        </p>
+      </div>
+
+      <!-- Footer Bottom Info -->
+      <div class="text-center space-y-2">
+        <div class="text-yellow-400 font-extrabold text-sm">SELVAGANAPATHY TRADERS - SUN FLAG FIREWORKS</div>
+        <p>Main Road, Kananjampatti, Sivakasi-Vembakkottai Road, Tamil Nadu | Phone: +91 6383144854, +91 99440 87728 | Email: selvaganapathytraders@gmail.com</p>
+        <p class="text-[11px] text-gray-500">© 2026 Selvaganapathy Traders. All rights reserved. Sivakasi Festival Fireworks.</p>
+      </div>
     </div>
   </footer>
 
