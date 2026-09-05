@@ -1076,33 +1076,43 @@ UPI ID: 6383144854@upi`;
         })
       }).catch(() => {});
 
-      // 2. Send to backend server /mail/send-pdf
-      const formData = new FormData();
-      formData.append("file", pdfBlob, `Estimate_${orderNo}.pdf`);
-      formData.append("email", "selvaganapathytraders@gmail.com, sudali599@gmail.com");
-
-      const serverEndpoints = [
-        "https://fireworks-server.vercel.app/mail/send-pdf",
-        "http://localhost:3000/mail/send-pdf"
-      ];
-      for (const url of serverEndpoints) {
-        fetch(url, { method: "POST", body: formData }).catch(() => {});
-      }
-
-      // 3. Send to FormSubmit
+      // 2. Prepare FormSubmit data with ALL item details AND attached PDF
       const formSubmitData = new FormData();
       formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
-      formSubmitData.append("_subject", `Customer Order PDF Estimate: ${orderNo} - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
+      formSubmitData.append("_subject", `New Customer Purchase Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
+      formSubmitData.append("_template", "table");
+      formSubmitData.append("_captcha", "false");
       formSubmitData.append("Order_Reference", orderNo);
+      formSubmitData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
       formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
       formSubmitData.append("Customer_Phone", cust.phone || "-");
-      formSubmitData.append("Grand_Total", `₹ ${summary.grandTotal.toFixed(2)}`);
+      formSubmitData.append("Customer_Email", cust.email || "Not Provided");
+      formSubmitData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
+      formSubmitData.append("Special_Notes", cust.notes || "None");
+      formSubmitData.append("Total_Varieties", `${summary.totalItems} items`);
+      formSubmitData.append("Total_Packages", `${summary.totalQuantity} boxes`);
+      formSubmitData.append("Grand_Total_INR", `₹ ${summary.grandTotal.toFixed(2)}`);
 
+      // Add each ordered item with individual line details
+      summary.cartItems.forEach((item, index) => {
+        const itemNum = String(index + 1).padStart(2, '0');
+        const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+        formSubmitData.append(`Item_${itemNum}_${cleanName}`, `Code #${item.id} | ${item.name} (${item.category}) | ${item.per} | Rate: ₹${item.price.toFixed(2)} | Qty: ${item.qty} | Subtotal: ₹${item.itemTotal.toFixed(2)}`);
+      });
+
+      // Full Multi-Line Summary Table
+      const fullListText = summary.cartItems.map((item, idx) => 
+        `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
+      ).join("\n");
+      formSubmitData.append("Full_Receipt_Bill", fullListText);
+
+      // Send to Selvaganapathy Traders Gmail
       fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
         method: "POST",
         body: formSubmitData
       }).catch(() => {});
 
+      // Send to Sudali Gmail
       fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
         method: "POST",
         body: formSubmitData
