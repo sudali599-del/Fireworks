@@ -82,6 +82,27 @@
       background-attachment: fixed;
     }
 
+    /* Custom Dark Glowing Scrollbar (Never White) */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16 !important;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #ec4899, #8b5cf6) !important;
+      border-radius: 9999px;
+      border: 2px solid #090d16 !important;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #f43f5e, #a855f7) !important;
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #ec4899 #090d16;
+    }
+
     /* Print Styles */
     @media print {
       body * {
@@ -95,8 +116,8 @@
         left: 0;
         top: 0;
         width: 100%;
-        background: white !important;
-        color: black !important;
+        background: #090d16 !important;
+        color: #f8fafc !important;
       }
     }
   </style>
@@ -429,16 +450,6 @@
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-gray-300 mb-1">Special Instructions / Transport Preference (Optional)</label>
-          <input 
-            type="text" 
-            name="cust_notes" 
-            placeholder="e.g. Preferred transport service, delivery timeline, etc." 
-            class="w-full px-3 py-2 bg-gray-900 border border-white/20 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
-          />
-        </div>
-
         <!-- Action Buttons Section -->
         <div class="pt-2 space-y-2">
           
@@ -669,26 +680,29 @@
     </div>
   </div>
 
-  <!-- ==================== FOOTER ==================== -->
-  <footer id="footer" class="border-t border-white/10 bg-gray-950/95 text-gray-400 text-xs py-10 px-4">
-    <div class="max-w-7xl mx-auto space-y-6">
+  <!-- ==================== FOOTER / CONTACT SECTION ==================== -->
+  <footer id="contact-section" class="border-t border-white/10 bg-gray-950/95 text-gray-400 text-xs py-12 px-4 scroll-mt-24">
+    <div class="max-w-7xl mx-auto space-y-8">
       
       <!-- Store Front & Google Maps Grid in Footer -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-white/10">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 pb-8 border-b border-white/10">
         <div>
-          <h4 class="text-white font-bold text-sm mb-2 flex items-center gap-2">
-            <span>🏬</span> Visit Our Sivakasi Factory Store
+          <h4 class="text-white font-extrabold text-base sm:text-lg mb-3 flex items-center gap-2">
+            <span class="text-xl">🏬</span> Visit Our Sivakasi Factory Store
           </h4>
-          <div class="rounded-xl overflow-hidden border border-white/10 shadow-lg h-48">
-            <img src="./Location_Pic.jpg" alt="Selvaganapathy Traders Store Front" class="w-full h-full object-cover">
+          <div class="rounded-2xl overflow-hidden border-2 border-yellow-400/30 shadow-2xl h-72 sm:h-96 md:h-[400px] bg-slate-900 group">
+            <img src="./Location_Pic.jpg" alt="Selvaganapathy Traders Store Front" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
           </div>
+          <p class="mt-2.5 text-xs text-yellow-300 font-semibold flex items-center gap-1.5">
+            <span>📍</span> Main Road, Kananjampatti, Sivakasi-Vembakkottai Road, Tamil Nadu
+          </p>
         </div>
 
         <div>
-          <h4 class="text-white font-bold text-sm mb-2 flex items-center gap-2">
-            <span>📍</span> Store Location (Google Maps)
+          <h4 class="text-white font-extrabold text-base sm:text-lg mb-3 flex items-center gap-2">
+            <span class="text-xl">📍</span> Store Location (Google Maps)
           </h4>
-          <div class="w-full h-48 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+          <div class="w-full h-72 sm:h-96 md:h-[400px] rounded-2xl overflow-hidden border-2 border-yellow-400/30 shadow-2xl bg-slate-900">
             <iframe
               title="Selvaganapathy Traders Location"
               src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d774.0211781897963!2d77.7807148!3d9.3559534!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b06c900012e23cf%3A0x765074c6264e55cd!2sSELVA%20GANAPATHY%20TRADERS!5e1!3m2!1sen!2sin!4v1753207962124!5m2!1sen!2sin"
@@ -700,6 +714,9 @@
               referrerpolicy="no-referrer-when-downgrade"
             ></iframe>
           </div>
+          <p class="mt-2.5 text-xs text-gray-300 font-semibold flex items-center gap-1.5">
+            <span>📞</span> Direct Helpline: +91 6383144854 / +91 99440 87728
+          </p>
         </div>
       </div>
 

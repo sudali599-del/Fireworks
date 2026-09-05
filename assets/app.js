@@ -35,8 +35,7 @@ UPI ID: 6383144854@upi`;
       email: "",
       address: "",
       city: "",
-      pincode: "",
-      notes: ""
+      pincode: ""
     }
   };
 
@@ -721,7 +720,6 @@ UPI ID: 6383144854@upi`;
       checkoutForm.elements["cust_address"].value = state.customer.address || "";
       checkoutForm.elements["cust_city"].value = state.customer.city || "";
       checkoutForm.elements["cust_pincode"].value = state.customer.pincode || "";
-      checkoutForm.elements["cust_notes"].value = state.customer.notes || "";
     }
 
     if (checkoutModal) checkoutModal.classList.remove("hidden");
@@ -776,9 +774,6 @@ UPI ID: 6383144854@upi`;
       text += `• Email Address: ${cust.email.trim()}\n`;
     }
     text += `• Delivery Address: ${cust.address.trim()}, ${cust.city.trim()}${cust.pincode ? ' - ' + cust.pincode.trim() : ''}\n`;
-    if (cust.notes && cust.notes.trim()) {
-      text += `• Customer Notes: ${cust.notes.trim()}\n`;
-    }
     text += `-------------------------------------------------\n`;
     text += `📦 COMPLETE ORDER LIST (ITEMIZED BREAKDOWN):\n`;
     text += `-------------------------------------------------\n`;
@@ -935,8 +930,7 @@ UPI ID: 6383144854@upi`;
             <strong>Name:</strong> ${cust.name || 'Valued Customer'}<br>
             <strong>Phone:</strong> ${cust.phone || '-'}<br>
             ${cust.email ? '<strong>Email:</strong> ' + cust.email + '<br>' : ''}
-            <strong>Address:</strong> ${cust.address || '-'}${cust.city ? ', ' + cust.city : ''}${cust.pincode ? ' - ' + cust.pincode : ''}<br>
-            ${cust.notes ? '<strong>Remarks:</strong> ' + cust.notes : ''}
+            <strong>Address:</strong> ${cust.address || '-'}${cust.city ? ', ' + cust.city : ''}${cust.pincode ? ' - ' + cust.pincode : ''}
           </div>
           <div style="text-align: right; line-height: 1.5;">
             <strong style="color: #0f172a;">ORDER SUMMARY:</strong><br>
@@ -1280,8 +1274,7 @@ UPI ID: 6383144854@upi`;
           email: checkoutForm.elements["cust_email"] ? checkoutForm.elements["cust_email"].value : "",
           address: checkoutForm.elements["cust_address"].value,
           city: checkoutForm.elements["cust_city"].value,
-          pincode: checkoutForm.elements["cust_pincode"].value,
-          notes: checkoutForm.elements["cust_notes"].value
+          pincode: checkoutForm.elements["cust_pincode"].value
         };
         saveCustomerState();
 
@@ -1444,10 +1437,16 @@ UPI ID: 6383144854@upi`;
       });
     }
 
-    // Contact Modal
+    // Contact Navigation (Smooth Scroll to Bottom Contact Section)
     openContactBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        if (contactModal) contactModal.classList.remove("hidden");
+      btn.addEventListener("click", e => {
+        e.preventDefault();
+        const contactSec = document.getElementById("contact-section");
+        if (contactSec) {
+          contactSec.scrollIntoView({ behavior: "smooth" });
+        } else if (contactModal) {
+          contactModal.classList.remove("hidden");
+        }
       });
     });
     if (closeContactBtn) {
