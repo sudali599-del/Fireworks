@@ -1293,41 +1293,70 @@ UPI ID: 6383144854@upi`;
         } else {
           closeCheckout();
           openOrderSuccessModal();
-          // 1. Immediately open/download customer PDF estimate
+          
+          const summary = getCartSummary();
+          const cust = state.customer;
+          const orderNo = getOrGenerateOrderNo();
+
+          // 1. Automatically generate/download customer PDF estimate
           printOrderEstimate();
 
-          // 2. Automatically transmit purchase copy to Shopkeeper WhatsApp
-          setTimeout(() => {
-            window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank");
-          }, 600);
-
-          // 3. Automatically transmit purchase copy to Shopkeeper Gmail Archive
-          setTimeout(() => {
-            openShopkeeperGmailOrder();
-          }, 1200);
-
-          // 4. If customer provided email, transmit confirmation copy
-          if (state.customer.email && state.customer.email.trim()) {
-            setTimeout(() => {
-              openCustomerGmailOrder();
-            }, 1800);
-          }
+          // 2. Automatically dispatch receipt copy to Shopkeeper & Customer in the background
+          dispatchOrderToBackend(summary, cust, orderNo);
         }
       });
+    }
+
+    // Automatic Background Dispatch to Backend API
+    async function dispatchOrderToBackend(summary, cust, orderNo) {
+      const payload = {
+        orderNo,
+        date: new Date().toLocaleDateString("en-IN"),
+        customer: cust,
+        totalItems: summary.totalItems,
+        totalQuantity: summary.totalQuantity,
+        grandTotal: summary.grandTotal,
+        cartItems: summary.cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          per: item.per,
+          price: item.price,
+          qty: item.qty,
+          itemTotal: item.itemTotal
+        }))
+      };
+
+      const endpoints = [
+        "https://fireworks-server.vercel.app/mail/send-order",
+        "http://localhost:3000/mail/send-order"
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            console.log("Order successfully registered with server dispatch:", endpoint);
+            break;
+          }
+        } catch (e) {
+          // Silent fallback
+        }
+      }
     }
 
     // Wire up Order Success Modal Action Buttons
     const closeSuccessBtn = document.getElementById("close-order-success-btn");
     const downloadPdfBtn = document.getElementById("order-success-download-pdf-btn");
-    const shopWhatsappBtn = document.getElementById("order-success-shop-whatsapp-btn");
-    const shopEmailBtn = document.getElementById("order-success-shop-email-btn");
     const successCopyBtn = document.getElementById("order-success-copy-text-btn");
     const newOrderBtn = document.getElementById("order-success-new-order-btn");
 
     if (closeSuccessBtn) closeSuccessBtn.addEventListener("click", closeOrderSuccessModal);
     if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => printOrderEstimate());
-    if (shopWhatsappBtn) shopWhatsappBtn.addEventListener("click", () => window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank"));
-    if (shopEmailBtn) shopEmailBtn.addEventListener("click", () => openShopkeeperGmailOrder());
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
 
     if (newOrderBtn) {
