@@ -1293,7 +1293,13 @@ UPI ID: 6383144854@upi`;
         } else {
           closeCheckout();
           openOrderSuccessModal();
+          // 1. Immediately open/download customer PDF estimate
           printOrderEstimate();
+
+          // 2. Automatically transmit purchase copy to Shopkeeper WhatsApp
+          setTimeout(() => {
+            window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank");
+          }, 600);
         }
       });
     }
@@ -1301,11 +1307,13 @@ UPI ID: 6383144854@upi`;
     // Wire up Order Success Modal Action Buttons
     const closeSuccessBtn = document.getElementById("close-order-success-btn");
     const downloadPdfBtn = document.getElementById("order-success-download-pdf-btn");
+    const shopWhatsappBtn = document.getElementById("order-success-shop-whatsapp-btn");
     const successCopyBtn = document.getElementById("order-success-copy-text-btn");
     const newOrderBtn = document.getElementById("order-success-new-order-btn");
 
     if (closeSuccessBtn) closeSuccessBtn.addEventListener("click", closeOrderSuccessModal);
     if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => printOrderEstimate());
+    if (shopWhatsappBtn) shopWhatsappBtn.addEventListener("click", () => window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank"));
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
 
     if (newOrderBtn) {
