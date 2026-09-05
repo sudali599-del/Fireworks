@@ -1051,14 +1051,14 @@ UPI ID: 6383144854@upi`;
     }
   }
 
-  // Dispatch only the PDF file to Shopkeeper & Backups
+  // Dispatch only the PDF file to Shopkeeper, Backups & Customer
   function dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary) {
     const reader = new FileReader();
     reader.readAsDataURL(pdfBlob);
     reader.onloadend = function () {
       const base64data = reader.result;
 
-      // 1. Send to Vercel Serverless Function on same domain
+      // 1. Send to Vercel Serverless Function on same domain (direct SMTP dispatch)
       fetch("/api/send-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1070,7 +1070,12 @@ UPI ID: 6383144854@upi`;
         })
       }).catch(() => {});
 
-      // 2. Prepare FormSubmit data with ALL item details AND attached PDF
+      // Full Multi-Line Summary Table
+      const fullListText = summary.cartItems.map((item, idx) => 
+        `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
+      ).join("\n");
+
+      // 2. Prepare FormSubmit data for Shopkeeper
       const formSubmitData = new FormData();
       formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
       formSubmitData.append("_subject", `New Customer Purchase Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
@@ -1082,7 +1087,6 @@ UPI ID: 6383144854@upi`;
       formSubmitData.append("Customer_Phone", cust.phone || "-");
       formSubmitData.append("Customer_Email", cust.email || "Not Provided");
       formSubmitData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
-      formSubmitData.append("Special_Notes", cust.notes || "None");
       formSubmitData.append("Total_Varieties", `${summary.totalItems} items`);
       formSubmitData.append("Total_Packages", `${summary.totalQuantity} boxes`);
       formSubmitData.append("Grand_Total_INR", `₹ ${summary.grandTotal.toFixed(2)}`);
@@ -1093,12 +1097,16 @@ UPI ID: 6383144854@upi`;
         const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
         formSubmitData.append(`Item_${itemNum}_${cleanName}`, `Code #${item.id} | ${item.name} (${item.category}) | ${item.per} | Rate: ₹${item.price.toFixed(2)} | Qty: ${item.qty} | Subtotal: ₹${item.itemTotal.toFixed(2)}`);
       });
-
-      // Full Multi-Line Summary Table
-      const fullListText = summary.cartItems.map((item, idx) => 
-        `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
-      ).join("\n");
       formSubmitData.append("Full_Receipt_Bill", fullListText);
+
+      // Add CCs & reply-to for customer and secondary shopkeeper
+      const ccList = ["sudali599@gmail.com"];
+      const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
+      if (hasCustEmail) {
+        ccList.push(cust.email.trim());
+        formSubmitData.append("_replyto", cust.email.trim());
+      }
+      formSubmitData.append("_cc", ccList.join(","));
 
       // Send to Selvaganapathy Traders Gmail
       fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
@@ -1111,6 +1119,56 @@ UPI ID: 6383144854@upi`;
         method: "POST",
         body: formSubmitData
       }).catch(() => {});
+
+      // 3. If Customer provided an email, dispatch direct receipt copies directly to the customer
+      if (hasCustEmail) {
+        const custEmailTrimmed = cust.email.trim();
+
+        // A. FormData with PDF attachment to customer
+        const customerFormData = new FormData();
+        customerFormData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
+        customerFormData.append("_subject", `Your Order Estimate & Receipt [${orderNo}] - Selvaganapathy Traders Sivakasi`);
+        customerFormData.append("_template", "table");
+        customerFormData.append("_captcha", "false");
+        customerFormData.append("Order_Reference", orderNo);
+        customerFormData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
+        customerFormData.append("Customer_Name", cust.name || "Valued Customer");
+        customerFormData.append("Customer_Phone", cust.phone || "-");
+        customerFormData.append("Customer_Email", custEmailTrimmed);
+        customerFormData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
+        customerFormData.append("Total_Varieties", `${summary.totalItems} items`);
+        customerFormData.append("Total_Packages", `${summary.totalQuantity} boxes`);
+        customerFormData.append("Grand_Total_INR", `₹ ${summary.grandTotal.toFixed(2)}`);
+        customerFormData.append("Full_Receipt_Bill", fullListText);
+
+        summary.cartItems.forEach((item, index) => {
+          const itemNum = String(index + 1).padStart(2, '0');
+          const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+          customerFormData.append(`Item_${itemNum}_${cleanName}`, `Code #${item.id} | ${item.name} (${item.category}) | ${item.per} | Rate: ₹${item.price.toFixed(2)} | Qty: ${item.qty} | Subtotal: ₹${item.itemTotal.toFixed(2)}`);
+        });
+
+        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(custEmailTrimmed)}`, {
+          method: "POST",
+          body: customerFormData
+        }).catch(() => {});
+
+        // B. Also JSON fallback to customer
+        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(custEmailTrimmed)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            _subject: `Order Receipt Confirmation [${orderNo}] - Selvaganapathy Traders`,
+            _template: "table",
+            _captcha: "false",
+            Order_Reference: orderNo,
+            Customer_Name: cust.name || "Valued Customer",
+            Total_Items: `${summary.totalItems} varieties (${summary.totalQuantity} boxes)`,
+            Grand_Total: `₹ ${summary.grandTotal.toFixed(2)}`,
+            Receipt_Summary: fullListText,
+            Store_Contact: "Selvaganapathy Traders, Sivakasi | +91 6383144854 / +91 99440 87728"
+          })
+        }).catch(() => {});
+      }
     };
   }
 
@@ -1255,6 +1313,17 @@ UPI ID: 6383144854@upi`;
       if (amountEl) amountEl.textContent = `₹ ${summary.grandTotal.toFixed(2)}`;
       if (phoneEl) phoneEl.textContent = cust.phone || "your phone";
       if (phoneBtnEl) phoneBtnEl.textContent = cust.phone || "your phone";
+
+      const custEmailStatusEl = document.getElementById("order-success-cust-email-status");
+      const custEmailValEl = document.getElementById("order-success-cust-email-val");
+      if (custEmailStatusEl && custEmailValEl) {
+        if (cust.email && cust.email.trim() && cust.email.includes("@")) {
+          custEmailValEl.textContent = cust.email.trim();
+          custEmailStatusEl.classList.remove("hidden");
+        } else {
+          custEmailStatusEl.classList.add("hidden");
+        }
+      }
 
       orderModal.classList.remove("hidden");
     }

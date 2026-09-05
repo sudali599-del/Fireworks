@@ -70,6 +70,7 @@ module.exports = async function handler(req, res) {
     const mailOptions = {
       from: `"Selvaganapathy Traders" <${senderEmail}>`,
       to: recipients.join(', '),
+      replyTo: customer?.email && customer.email.trim() ? customer.email.trim() : senderEmail,
       subject: `Official Customer Receipt [${orderNo}] - ₹${summary?.grandTotal?.toFixed(2) || '0.00'} (${customer?.name || 'Customer'})`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background: #f8fafc;">
