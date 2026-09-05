@@ -1271,36 +1271,6 @@ UPI ID: 6383144854@upi`;
       if (orderModal) orderModal.classList.add("hidden");
     }
 
-    // Automated Multi-Channel Dispatch Sequence
-    function executeAutomatedDispatchSequence() {
-      // 1. Immediately open printable A4 e-PDF estimate
-      printOrderEstimate();
-
-      // 2. Open Shopkeeper WhatsApp with itemized list
-      setTimeout(() => {
-        window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank");
-      }, 300);
-
-      // 3. Open Customer WhatsApp with itemized list (if valid number)
-      if (state.customer.phone && state.customer.phone.trim()) {
-        setTimeout(() => {
-          window.open(buildCustomerWhatsAppMessage(), "_blank");
-        }, 800);
-      }
-
-      // 4. Open Shopkeeper Gmail record archiving
-      setTimeout(() => {
-        openShopkeeperGmailOrder();
-      }, 1300);
-
-      // 5. If customer provided email, open Customer Gmail confirmation
-      if (state.customer.email && state.customer.email.trim()) {
-        setTimeout(() => {
-          openCustomerGmailOrder();
-        }, 1800);
-      }
-    }
-
     // Checkout Form Submission
     if (checkoutForm) {
       checkoutForm.addEventListener("submit", e => {
@@ -1318,24 +1288,12 @@ UPI ID: 6383144854@upi`;
 
         const submitAction = e.submitter ? e.submitter.getAttribute("data-action") : "place_order_all";
 
-        if (submitAction === "place_order_all") {
-          closeCheckout();
-          openOrderSuccessModal();
-          executeAutomatedDispatchSequence();
-        } else if (submitAction === "whatsapp_primary") {
-          window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank");
-          closeCheckout();
-          openOrderSuccessModal();
-        } else if (submitAction === "gmail_order") {
-          openShopkeeperGmailOrder();
-          closeCheckout();
-          openOrderSuccessModal();
-        } else if (submitAction === "print_estimate") {
-          printOrderEstimate();
-          closeCheckout();
-          openOrderSuccessModal();
-        } else if (submitAction === "copy_order") {
+        if (submitAction === "copy_order") {
           copyOrderToClipboard();
+        } else {
+          closeCheckout();
+          openOrderSuccessModal();
+          printOrderEstimate();
         }
       });
     }
@@ -1343,19 +1301,11 @@ UPI ID: 6383144854@upi`;
     // Wire up Order Success Modal Action Buttons
     const closeSuccessBtn = document.getElementById("close-order-success-btn");
     const downloadPdfBtn = document.getElementById("order-success-download-pdf-btn");
-    const shopWhatsappBtn = document.getElementById("order-success-shop-whatsapp-btn");
-    const custWhatsappBtn = document.getElementById("order-success-cust-whatsapp-btn");
-    const shopEmailBtn = document.getElementById("order-success-shop-email-btn");
-    const custEmailBtn = document.getElementById("order-success-cust-email-btn");
     const successCopyBtn = document.getElementById("order-success-copy-text-btn");
     const newOrderBtn = document.getElementById("order-success-new-order-btn");
 
     if (closeSuccessBtn) closeSuccessBtn.addEventListener("click", closeOrderSuccessModal);
     if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => printOrderEstimate());
-    if (shopWhatsappBtn) shopWhatsappBtn.addEventListener("click", () => window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank"));
-    if (custWhatsappBtn) custWhatsappBtn.addEventListener("click", () => window.open(buildCustomerWhatsAppMessage(), "_blank"));
-    if (shopEmailBtn) shopEmailBtn.addEventListener("click", () => openShopkeeperGmailOrder());
-    if (custEmailBtn) custEmailBtn.addEventListener("click", () => openCustomerGmailOrder());
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
 
     if (newOrderBtn) {

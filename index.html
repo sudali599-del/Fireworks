@@ -448,29 +448,8 @@
             data-action="place_order_all" 
             class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-98 transition-all"
           >
-            <span>🎉 Submit Order &amp; Get e-PDF (WhatsApp &amp; Email Dispatch) ➔</span>
+            <span>🎉 Submit Order &amp; Generate Formal PDF Estimate ➔</span>
           </button>
-
-          <!-- Direct Quick Actions Row -->
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <!-- Send via WhatsApp -->
-            <button 
-              type="submit" 
-              data-action="whatsapp_primary" 
-              class="py-2.5 px-3 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 font-bold text-xs flex items-center justify-center gap-1.5 shadow"
-            >
-              <span>💬 WhatsApp Order</span>
-            </button>
-
-            <!-- Send to Shopkeeper Gmail -->
-            <button 
-              type="submit" 
-              data-action="gmail_order" 
-              class="py-2.5 px-3 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-500/40 font-bold text-xs flex items-center justify-center gap-1.5 shadow"
-            >
-              <span>📧 Gmail Record</span>
-            </button>
-          </div>
 
           <!-- Download / Print PDF Estimate -->
           <button 
@@ -486,7 +465,7 @@
     </div>
   </div>
 
-  <!-- ==================== ORDER SUCCESS & MULTI-CHANNEL DISPATCH MODAL ==================== -->
+  <!-- ==================== ORDER SUCCESS MODAL ==================== -->
   <div id="order-success-modal" class="fixed inset-0 z-[10002] bg-black/90 backdrop-blur-lg hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-slate-950 border border-emerald-500/50 rounded-2xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-7 shadow-2xl relative my-auto max-h-[94vh] overflow-y-auto">
       
@@ -520,64 +499,26 @@
         </div>
       </div>
 
-      <!-- Automated Dispatch Status Banner -->
+      <!-- Order Confirmation Status Banner -->
       <div id="payment-confirmed-banner" class="mb-4 p-3 rounded-xl bg-gradient-to-b from-emerald-950/90 to-teal-950/90 border border-emerald-400/60 shadow-lg text-left">
         <div class="flex items-center gap-2 mb-1.5">
-          <span class="text-base">🚀</span>
-          <h4 class="text-xs font-black text-yellow-300 uppercase tracking-wide">Automated Dispatches Completed</h4>
+          <span class="text-base">📄</span>
+          <h4 class="text-xs font-black text-yellow-300 uppercase tracking-wide">Official Estimate Ready</h4>
         </div>
         <div class="text-[11px] text-gray-200 font-medium space-y-1 bg-black/40 p-2.5 rounded-lg border border-white/10">
           <div class="flex items-center gap-1.5 text-emerald-300"><span>✓</span> <strong>Official e-PDF Estimate:</strong> Generated &amp; Downloaded</div>
-          <div class="flex items-center gap-1.5 text-emerald-300"><span>✓</span> <strong>Shopkeeper WhatsApp:</strong> Dispatched (+91 6383144854)</div>
-          <div class="flex items-center gap-1.5 text-emerald-300"><span>✓</span> <strong>Customer WhatsApp:</strong> Dispatched (<span id="order-success-cust-phone">-</span>)</div>
-          <div class="flex items-center gap-1.5 text-emerald-300"><span>✓</span> <strong>Shopkeeper Gmail:</strong> Archived (selvaganapathytraders@gmail.com)</div>
-          <div class="flex items-center gap-1.5 text-emerald-300"><span>✓</span> <strong>Customer Email:</strong> Confirmation Dispatched</div>
+          <div class="flex items-center gap-1.5 text-emerald-300"><span>✓</span> <strong>Booking Status:</strong> Registered for Packing</div>
         </div>
       </div>
 
-      <!-- Dispatch & Receipt Action Buttons -->
+      <!-- PDF Download Button -->
       <div class="space-y-2 mb-4">
-        
-        <!-- 1. Download e-PDF Receipt -->
         <button 
           id="order-success-download-pdf-btn" 
-          class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-pink-700 hover:from-purple-600 hover:to-pink-600 text-white font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 hover:scale-[1.01] transition-transform"
+          class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] transition-transform"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
           <span>🖨️ Download / Print Formal e-PDF Estimate</span>
-        </button>
-
-        <!-- 2. Send to Shopkeeper WhatsApp -->
-        <button 
-          id="order-success-shop-whatsapp-btn" 
-          class="w-full py-2 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2"
-        >
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-5.705 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-          <span>💬 Send to Shopkeeper WhatsApp (+91 6383144854)</span>
-        </button>
-
-        <!-- 3. Send to Customer WhatsApp -->
-        <button 
-          id="order-success-cust-whatsapp-btn" 
-          class="w-full py-2 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-2"
-        >
-          <span>📱 Send to Customer WhatsApp (<span id="order-success-cust-phone-btn">your phone</span>)</span>
-        </button>
-
-        <!-- 4. Send Record to Shopkeeper Gmail -->
-        <button 
-          id="order-success-shop-email-btn" 
-          class="w-full py-2 px-4 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-200 border border-red-500/40 font-bold text-xs flex items-center justify-center gap-2"
-        >
-          <span>📧 Send Order Record to Shopkeeper (selvaganapathytraders@gmail.com)</span>
-        </button>
-
-        <!-- 5. Send Receipt to Customer Gmail (if provided) -->
-        <button 
-          id="order-success-cust-email-btn" 
-          class="w-full py-2 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 text-slate-300 border border-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5"
-        >
-          <span>✉️ Send Copy to Customer Email</span>
         </button>
       </div>
 

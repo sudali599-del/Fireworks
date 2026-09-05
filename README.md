@@ -3,7 +3,6 @@
 
 [![Live Production](https://img.shields.io/badge/Vercel-Live%20Production-success?style=for-the-badge&logo=vercel)](https://wwwselvaganapathytradersin.vercel.app)
 [![Diwali 2026](https://img.shields.io/badge/Diwali-2026%20Catalog-orange?style=for-the-badge)](https://wwwselvaganapathytradersin.vercel.app)
-[![WhatsApp Dispatch](https://img.shields.io/badge/WhatsApp-Automated%20Dispatch-25D366?style=for-the-badge&logo=whatsapp)](https://wa.me/916383144854)
 
 ---
 
@@ -30,20 +29,12 @@
 - Floating cart summary badge in the bottom corner for quick checkout access.
 - Slide-out Cart Drawer and responsive Checkout Modal.
 
-### 3. ?? Automated e-PDF Quotation Invoice Generator
-- 1-Click instant printable A4 formal estimate generation.
+### 3. ?? 1-Click Formal e-PDF Estimate Generator
+- Instant printable A4 formal estimate generation.
 - Full corporate header, customer delivery details, itemized breakdown, unit rates, quantities, and authorized factory signature seal.
-- Clean printable formatting without requiring any payment gateway or UTR roadblocks.
+- Clean quotation formatting without payment blockers.
 
-### 4. ?? Multi-Channel Instant Order Dispatch
-When an order is submitted:
-- ?? **Official e-PDF Estimate:** Automatically generated and opened for download.
-- ?? **Shopkeeper WhatsApp Dispatch:** Dispatched directly to `+91 6383144854`.
-- ?? **Customer WhatsApp Dispatch:** Dispatched to customer's mobile number.
-- ?? **Shopkeeper Gmail Record:** Archived to `selvaganapathytraders@gmail.com`.
-- ?? **Customer Email Confirmation:** Sent to customer email when provided.
-
-### 5. ?? Storefront & Location Map
+### 4. ?? Storefront & Location Map
 - Factory & Storefront photo preview (`Location_Pic.jpg`).
 - Embedded Google Maps location directly in the Contact Modal and Footer.
 - Full festive animations and interactive background canvas fireworks.
@@ -55,10 +46,10 @@ When an order is submitted:
 ```
 www.selvaganapathytraders.in/
 +-- assets/
-¦   +-- app.js               # Core application engine, cart calculations, & dispatch logic
+¦   +-- app.js               # Core application engine & cart calculations
 ¦   +-- fireworks.js         # Canvas particle fireworks animation system
 ¦   +-- products.js          # Complete 164-item 2026 product database
-¦   +-- qrcode.min.js        # Offline QR generation utility
+¦   +-- qrcode.min.js        # Offline QR utility
 ¦   +-- index-BRggYUAu.css   # Tailored utility & component styling
 +-- Location_Pic.jpg         # Storefront photograph
 +-- logo.png                 # Selvaganapathy Traders brand logo
