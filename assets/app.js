@@ -12,6 +12,7 @@
   const PRIMARY_PHONE = "916383144854";
   const SECONDARY_PHONE = "919944087728";
   const DEFAULT_GMAIL = "selvaganapathytraders@gmail.com";
+  const ADMIN_EMAILS = ["selvaganapathytraders@gmail.com", "sudali599@gmail.com"];
   const PRIMARY_UPI_ID = "6383144854@upi";
   const BANK_INFO_TEXT = `Bank Account Details for Online Payment:
 Account Name: SELVAGANAPATHY TRADERS
