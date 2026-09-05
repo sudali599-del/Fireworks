@@ -1304,12 +1304,80 @@ UPI ID: 6383144854@upi`;
 
           // 2. Automatically dispatch receipt copy to Shopkeeper & Customer in the background
           dispatchOrderToBackend(summary, cust, orderNo);
+
+          // 3. Start automatic redirection back to main shopping catalog
+          startAutoRedirectCountdown();
         }
       });
     }
 
-    // Automatic Background Dispatch to Backend API
+    let redirectTimer = null;
+    function startAutoRedirectCountdown() {
+      let secondsLeft = 4;
+      const countdownEl = document.getElementById("redirect-countdown");
+      if (countdownEl) countdownEl.textContent = secondsLeft;
+
+      if (redirectTimer) clearInterval(redirectTimer);
+      redirectTimer = setInterval(() => {
+        secondsLeft -= 1;
+        if (countdownEl) countdownEl.textContent = secondsLeft;
+        if (secondsLeft <= 0) {
+          clearInterval(redirectTimer);
+          // Reset cart & return to home view
+          state.cart = {};
+          resetOrderNo();
+          saveCartState();
+          renderProducts();
+          updateCartUI();
+          closeOrderSuccessModal();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }, 1000);
+    }
+
+    // Automatic Background Dispatch to Backend API & FormSubmit
     async function dispatchOrderToBackend(summary, cust, orderNo) {
+      const emailContent = {
+        _subject: `New Diwali 2026 Purchase [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`,
+        _template: "table",
+        _captcha: "false",
+        Order_Reference: orderNo,
+        Order_Date: new Date().toLocaleDateString("en-IN"),
+        Customer_Name: cust.name || "Valued Customer",
+        Customer_Phone: cust.phone || "-",
+        Customer_Email: cust.email || "Not Provided",
+        Delivery_Address: `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`,
+        Special_Notes: cust.notes || "None",
+        Total_Varieties: `${summary.totalItems} items`,
+        Total_Packages: `${summary.totalQuantity} boxes`,
+        Grand_Total_INR: `₹ ${summary.grandTotal.toFixed(2)}`,
+        Itemized_Bill: summary.cartItems.map(i => `#${i.id} | ${i.name} (${i.category}) | ${i.per} | Rate: ₹${i.price.toFixed(2)} | Qty: ${i.qty} | Total: ₹${i.itemTotal.toFixed(2)}`).join("\n\n")
+      };
+
+      // 1. Direct FormSubmit Email Dispatch to Shopkeeper (selvaganapathytraders@gmail.com)
+      fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(emailContent)
+      }).catch(e => console.warn("Shopkeeper email dispatch:", e));
+
+      // 2. Direct FormSubmit Email Dispatch to Shopkeeper Backup (sudali599@gmail.com)
+      fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(emailContent)
+      }).catch(e => console.warn("Backup email dispatch:", e));
+
+      // 3. Direct FormSubmit to Customer Email if provided
+      if (cust.email && cust.email.includes("@")) {
+        fetch(`https://formsubmit.co/ajax/${cust.email.trim()}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify(emailContent)
+        }).catch(() => {});
+      }
+
+      // 4. REST API Server endpoint (Fireworks-Server)
       const payload = {
         orderNo,
         date: new Date().toLocaleDateString("en-IN"),
@@ -1356,8 +1424,18 @@ UPI ID: 6383144854@upi`;
     const successCopyBtn = document.getElementById("order-success-copy-text-btn");
     const newOrderBtn = document.getElementById("order-success-new-order-btn");
 
-    if (closeSuccessBtn) closeSuccessBtn.addEventListener("click", closeOrderSuccessModal);
-    if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => printOrderEstimate());
+    if (closeSuccessBtn) {
+      closeSuccessBtn.addEventListener("click", () => {
+        if (redirectTimer) clearInterval(redirectTimer);
+        closeOrderSuccessModal();
+      });
+    }
+    if (downloadPdfBtn) {
+      downloadPdfBtn.addEventListener("click", () => {
+        printOrderEstimate();
+        startAutoRedirectCountdown();
+      });
+    }
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
 
     if (newOrderBtn) {
