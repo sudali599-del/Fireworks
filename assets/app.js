@@ -1059,38 +1059,55 @@ UPI ID: 6383144854@upi`;
 
   // Dispatch only the PDF file to Shopkeeper & Backups
   function dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary) {
-    // Send to backend server with attached PDF
-    const formData = new FormData();
-    formData.append("file", pdfBlob, `Estimate_${orderNo}.pdf`);
-    formData.append("email", "selvaganapathytraders@gmail.com, sudali599@gmail.com");
+    const reader = new FileReader();
+    reader.readAsDataURL(pdfBlob);
+    reader.onloadend = function () {
+      const base64data = reader.result;
 
-    const endpoints = [
-      "https://fireworks-server.vercel.app/mail/send-pdf",
-      "http://localhost:3000/mail/send-pdf"
-    ];
+      // 1. Send to Vercel Serverless Function on same domain
+      fetch("/api/send-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderNo,
+          customer: cust,
+          summary,
+          pdfBase64: base64data
+        })
+      }).catch(() => {});
 
-    for (const url of endpoints) {
-      fetch(url, { method: "POST", body: formData }).catch(() => {});
-    }
+      // 2. Send to backend server /mail/send-pdf
+      const formData = new FormData();
+      formData.append("file", pdfBlob, `Estimate_${orderNo}.pdf`);
+      formData.append("email", "selvaganapathytraders@gmail.com, sudali599@gmail.com");
 
-    // Send attached PDF to FormSubmit for instant email inbox delivery
-    const formSubmitData = new FormData();
-    formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
-    formSubmitData.append("_subject", `Customer Order PDF Estimate: ${orderNo} - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
-    formSubmitData.append("Order_Reference", orderNo);
-    formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
-    formSubmitData.append("Customer_Phone", cust.phone || "-");
-    formSubmitData.append("Grand_Total", `₹ ${summary.grandTotal.toFixed(2)}`);
+      const serverEndpoints = [
+        "https://fireworks-server.vercel.app/mail/send-pdf",
+        "http://localhost:3000/mail/send-pdf"
+      ];
+      for (const url of serverEndpoints) {
+        fetch(url, { method: "POST", body: formData }).catch(() => {});
+      }
 
-    fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
-      method: "POST",
-      body: formSubmitData
-    }).catch(() => {});
+      // 3. Send to FormSubmit
+      const formSubmitData = new FormData();
+      formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
+      formSubmitData.append("_subject", `Customer Order PDF Estimate: ${orderNo} - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
+      formSubmitData.append("Order_Reference", orderNo);
+      formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
+      formSubmitData.append("Customer_Phone", cust.phone || "-");
+      formSubmitData.append("Grand_Total", `₹ ${summary.grandTotal.toFixed(2)}`);
 
-    fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
-      method: "POST",
-      body: formSubmitData
-    }).catch(() => {});
+      fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
+        method: "POST",
+        body: formSubmitData
+      }).catch(() => {});
+
+      fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
+        method: "POST",
+        body: formSubmitData
+      }).catch(() => {});
+    };
   }
 
   // Fallback Print

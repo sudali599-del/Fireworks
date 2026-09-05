@@ -1,5 +1,8 @@
 {
   "name": "selvaganapathy-traders-fireworks",
   "version": "2026.1.0",
-  "description": "Selvaganapathy Traders - Sun Flag Fireworks, Sivakasi"
+  "description": "Selvaganapathy Traders - Sun Flag Fireworks, Sivakasi",
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  }
 }
