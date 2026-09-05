@@ -1300,6 +1300,18 @@ UPI ID: 6383144854@upi`;
           setTimeout(() => {
             window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank");
           }, 600);
+
+          // 3. Automatically transmit purchase copy to Shopkeeper Gmail Archive
+          setTimeout(() => {
+            openShopkeeperGmailOrder();
+          }, 1200);
+
+          // 4. If customer provided email, transmit confirmation copy
+          if (state.customer.email && state.customer.email.trim()) {
+            setTimeout(() => {
+              openCustomerGmailOrder();
+            }, 1800);
+          }
         }
       });
     }
@@ -1308,12 +1320,14 @@ UPI ID: 6383144854@upi`;
     const closeSuccessBtn = document.getElementById("close-order-success-btn");
     const downloadPdfBtn = document.getElementById("order-success-download-pdf-btn");
     const shopWhatsappBtn = document.getElementById("order-success-shop-whatsapp-btn");
+    const shopEmailBtn = document.getElementById("order-success-shop-email-btn");
     const successCopyBtn = document.getElementById("order-success-copy-text-btn");
     const newOrderBtn = document.getElementById("order-success-new-order-btn");
 
     if (closeSuccessBtn) closeSuccessBtn.addEventListener("click", closeOrderSuccessModal);
     if (downloadPdfBtn) downloadPdfBtn.addEventListener("click", () => printOrderEstimate());
     if (shopWhatsappBtn) shopWhatsappBtn.addEventListener("click", () => window.open(buildWhatsAppMessage(PRIMARY_PHONE), "_blank"));
+    if (shopEmailBtn) shopEmailBtn.addEventListener("click", () => openShopkeeperGmailOrder());
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
 
     if (newOrderBtn) {
