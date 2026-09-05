@@ -907,7 +907,193 @@ UPI ID: 6383144854@upi`;
     return buildWhatsAppMessage(targetPhone);
   }
 
-  // Print Clean Corporate PDF Invoice / Quotation
+  // Build Clean Corporate A4 HTML Estimate
+  function buildEstimateHtml(summary, cust, orderNo, dateStr) {
+    return `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a; padding: 20px; font-size: 12px; background: #ffffff; width: 100%; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px;">
+          <div>
+            <h1 style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 2px 0;">SELVAGANAPATHY TRADERS</h1>
+            <div style="font-size: 11px; font-weight: 700; color: #d97706; text-transform: uppercase; margin: 0 0 4px 0;">Sun Flag Fireworks &amp; Sparklers • Sivakasi</div>
+            <div style="font-size: 10px; color: #475569; line-height: 1.4;">
+              Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu, India<br>
+              Phone: +91 6383144854 / +91 99440 87728 | Email: selvaganapathytraders@gmail.com
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="display: inline-block; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-transform: uppercase;">Official Order Estimate</span>
+            <div style="font-size: 10px; color: #475569; margin-top: 6px; line-height: 1.4;">
+              <strong>Estimate Ref:</strong> ${orderNo}<br>
+              <strong>Date:</strong> ${dateStr}
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px;">
+          <div style="line-height: 1.5;">
+            <strong style="color: #0f172a;">CUSTOMER DETAILS:</strong><br>
+            <strong>Name:</strong> ${cust.name || 'Valued Customer'}<br>
+            <strong>Phone:</strong> ${cust.phone || '-'}<br>
+            ${cust.email ? '<strong>Email:</strong> ' + cust.email + '<br>' : ''}
+            <strong>Address:</strong> ${cust.address || '-'}${cust.city ? ', ' + cust.city : ''}${cust.pincode ? ' - ' + cust.pincode : ''}<br>
+            ${cust.notes ? '<strong>Remarks:</strong> ' + cust.notes : ''}
+          </div>
+          <div style="text-align: right; line-height: 1.5;">
+            <strong style="color: #0f172a;">ORDER SUMMARY:</strong><br>
+            <strong>Product Varieties:</strong> ${summary.totalItems}<br>
+            <strong>Total Package Units:</strong> ${summary.totalQuantity}<br>
+            <strong>Booking Status:</strong> <span style="color: #059669; font-weight: bold; background: #dcfce7; padding: 2px 6px; border-radius: 4px;">✅ Confirmed &amp; Dispatched</span><br>
+            <strong>Dispatch Status:</strong> <span style="color: #059669; font-weight: bold;">Ready for Factory Packing</span>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10px;">
+          <thead>
+            <tr style="background: #0f172a; color: #ffffff;">
+              <th style="padding: 6px 8px; text-align: center; width: 30px;">#</th>
+              <th style="padding: 6px 8px; text-align: left;">Product Description</th>
+              <th style="padding: 6px 8px; text-align: left; width: 120px;">Category</th>
+              <th style="padding: 6px 8px; text-align: center; width: 50px;">Unit</th>
+              <th style="padding: 6px 8px; text-align: right; width: 70px;">Rate (₹)</th>
+              <th style="padding: 6px 8px; text-align: center; width: 40px;">Qty</th>
+              <th style="padding: 6px 8px; text-align: right; width: 75px;">Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${summary.cartItems.map((item, index) => `
+              <tr style="border-bottom: 1px solid #e2e8f0; background: ${index % 2 === 1 ? '#f8fafc' : '#ffffff'};">
+                <td style="padding: 5px 8px; text-align: center; font-weight: bold; color: #64748b;">${item.id}</td>
+                <td style="padding: 5px 8px; font-weight: bold;">${item.name}</td>
+                <td style="padding: 5px 8px; color: #475569;">${item.category}</td>
+                <td style="padding: 5px 8px; text-align: center;">${item.per}</td>
+                <td style="padding: 5px 8px; text-align: right;">${item.price.toFixed(2)}</td>
+                <td style="padding: 5px 8px; text-align: center; font-weight: bold;">${item.qty}</td>
+                <td style="padding: 5px 8px; text-align: right; font-weight: bold;">${item.itemTotal.toFixed(2)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10px; gap: 15px;">
+          <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; background: #f8fafc; font-size: 10px;">
+            <strong style="color: #0f172a; text-transform: uppercase;">🏭 Sivakasi Factory Dispatch Terms:</strong>
+            <ul style="margin: 4px 0 0 12px; padding: 0; line-height: 1.4; color: #475569;">
+              <li>Orders are safely packed with industrial cartons.</li>
+              <li>Dispatches are routed via leading road parcel transport services.</li>
+              <li>Support & Tracking: <strong>+91 6383144854 / +91 99440 87728</strong></li>
+            </ul>
+          </div>
+
+          <div style="width: 250px; border: 1px solid #0f172a; border-radius: 6px; overflow: hidden; background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10px; border-bottom: 1px solid #e2e8f0;">
+              <span>Product Varieties:</span>
+              <strong>${summary.totalItems}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10px; border-bottom: 1px solid #e2e8f0;">
+              <span>Total Packages:</span>
+              <strong>${summary.totalQuantity} boxes</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 7px 10px; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800;">
+              <span>NET TOTAL:</span>
+              <span>₹ ${summary.grandTotal.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9px; color: #64748b;">
+          <div>
+            <strong>SELVAGANAPATHY TRADERS (SUN FLAG FIREWORKS)</strong><br>
+            Kananjampatti - Sivakasi, Tamil Nadu | selvaganapathytraders@gmail.com
+          </div>
+          <div style="text-align: right; border-top: 1px solid #0f172a; padding-top: 2px; font-weight: bold; color: #0f172a;">
+            Authorized Signatory / Selvaganapathy Traders
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Real PDF Generator & Automated Shopkeeper Dispatch
+  async function downloadAndSendPdf(summary, cust, orderNo) {
+    const dateStr = new Date().toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+
+    const container = document.createElement("div");
+    container.innerHTML = buildEstimateHtml(summary, cust, orderNo, dateStr);
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    container.style.top = "0";
+    container.style.width = "780px";
+    document.body.appendChild(container);
+
+    if (window.html2pdf) {
+      const opt = {
+        margin: [6, 6, 6, 6],
+        filename: `Estimate_${orderNo}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      try {
+        // 1. Download PDF file directly for customer
+        await html2pdf().set(opt).from(container).save();
+
+        // 2. Generate PDF Blob and send directly to shopkeeper emails
+        const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
+        dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary);
+      } catch (err) {
+        console.warn("html2pdf generation error, using popup fallback:", err);
+        printOrderEstimate();
+      } finally {
+        if (container.parentNode) container.parentNode.removeChild(container);
+      }
+    } else {
+      printOrderEstimate();
+      if (container.parentNode) container.parentNode.removeChild(container);
+    }
+  }
+
+  // Dispatch only the PDF file to Shopkeeper & Backups
+  function dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary) {
+    // Send to backend server with attached PDF
+    const formData = new FormData();
+    formData.append("file", pdfBlob, `Estimate_${orderNo}.pdf`);
+    formData.append("email", "selvaganapathytraders@gmail.com, sudali599@gmail.com");
+
+    const endpoints = [
+      "https://fireworks-server.vercel.app/mail/send-pdf",
+      "http://localhost:3000/mail/send-pdf"
+    ];
+
+    for (const url of endpoints) {
+      fetch(url, { method: "POST", body: formData }).catch(() => {});
+    }
+
+    // Send attached PDF to FormSubmit for instant email inbox delivery
+    const formSubmitData = new FormData();
+    formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
+    formSubmitData.append("_subject", `Customer Order PDF Estimate: ${orderNo} - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
+    formSubmitData.append("Order_Reference", orderNo);
+    formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
+    formSubmitData.append("Customer_Phone", cust.phone || "-");
+    formSubmitData.append("Grand_Total", `₹ ${summary.grandTotal.toFixed(2)}`);
+
+    fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
+      method: "POST",
+      body: formSubmitData
+    }).catch(() => {});
+
+    fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
+      method: "POST",
+      body: formSubmitData
+    }).catch(() => {});
+  }
+
+  // Fallback Print
   function printOrderEstimate() {
     const summary = getCartSummary();
     const cust = state.customer;
@@ -931,230 +1117,15 @@ UPI ID: 6383144854@upi`;
         <title>Order Estimate ${orderNo} - Selvaganapathy Traders Sivakasi</title>
         <meta charset="utf-8">
         <style>
-          @page { size: A4 portrait; margin: 12mm; }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #0f172a;
-            margin: 0;
-            padding: 10px;
-            font-size: 13px;
-          }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 12px;
-            margin-bottom: 16px;
-          }
-          .company-title {
-            font-size: 22px;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: -0.5px;
-            margin: 0 0 2px 0;
-          }
-          .company-sub {
-            font-size: 12px;
-            font-weight: 700;
-            color: #d97706;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0 0 4px 0;
-          }
-          .company-meta {
-            font-size: 11px;
-            color: #475569;
-            line-height: 1.4;
-          }
-          .doc-type {
-            text-align: right;
-          }
-          .doc-badge {
-            display: inline-block;
-            background: #0f172a;
-            color: #ffffff;
-            font-size: 13px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          .doc-meta {
-            font-size: 11px;
-            color: #475569;
-            margin-top: 6px;
-            line-height: 1.4;
-          }
-          .info-grid {
-            display: flex;
-            justify-content: space-between;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 12px 14px;
-            margin-bottom: 16px;
-          }
-          .info-block {
-            font-size: 11px;
-            line-height: 1.5;
-          }
-          .info-block strong {
-            color: #0f172a;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 16px;
-          }
-          th {
-            background-color: #0f172a;
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 10px;
-            text-align: left;
-            border: 1px solid #0f172a;
-          }
-          td {
-            padding: 7px 10px;
-            border: 1px solid #e2e8f0;
-            font-size: 11px;
-            color: #1e293b;
-          }
-          tr:nth-child(even) {
-            background-color: #f8fafc;
-          }
-          .actions {
-            margin-bottom: 12px;
-            text-align: right;
-          }
-          .print-btn {
-            background: #0f172a;
-            color: #ffffff;
-            border: none;
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 700;
-            border-radius: 6px;
-            cursor: pointer;
-          }
-          @media print {
-            .actions { display: none; }
-          }
+          @page { size: A4 portrait; margin: 10mm; }
+          body { margin: 0; padding: 0; }
         </style>
       </head>
       <body>
-        <div class="actions">
-          <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <div style="text-align: right; padding: 10px;">
+          <button onclick="window.print()" style="padding: 8px 16px; background: #0f172a; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🖨️ Print / Save as PDF</button>
         </div>
-
-        <div class="header">
-          <div>
-            <h1 class="company-title">SELVAGANAPATHY TRADERS</h1>
-            <div class="company-sub">Sun Flag Fireworks &amp; Sparklers • Sivakasi</div>
-            <div class="company-meta">
-              Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu, India<br>
-              Phone: +91 6383144854 / +91 99440 87728 | Email: selvaganapathytraders@gmail.com
-            </div>
-          </div>
-          <div class="doc-type">
-            <span class="doc-badge">Official Order Estimate</span>
-            <div class="doc-meta">
-              <strong>Estimate Ref:</strong> ${orderNo}<br>
-              <strong>Date:</strong> ${dateStr}
-            </div>
-          </div>
-        </div>
-
-        <div class="info-grid">
-          <div class="info-block">
-            <strong>CUSTOMER DETAILS:</strong><br>
-            <strong>Name:</strong> ${cust.name || 'Valued Customer'}<br>
-            <strong>Phone:</strong> ${cust.phone || '-'}<br>
-            ${cust.email ? '<strong>Email:</strong> ' + cust.email + '<br>' : ''}
-            <strong>Address:</strong> ${cust.address || '-'}${cust.city ? ', ' + cust.city : ''}${cust.pincode ? ' - ' + cust.pincode : ''}<br>
-            ${cust.notes ? '<strong>Remarks:</strong> ' + cust.notes : ''}
-          </div>
-          <div class="info-block" style="text-align: right;">
-            <strong>ORDER SUMMARY:</strong><br>
-            <strong>Product Varieties:</strong> ${summary.totalItems}<br>
-            <strong>Total Package Units:</strong> ${summary.totalQuantity}<br>
-            <strong>Booking Status:</strong> <span style="color: #059669; font-weight: bold; background: #dcfce7; padding: 2px 6px; border-radius: 4px;">✅ Confirmed &amp; Dispatched</span><br>
-            <strong>Dispatch Status:</strong> <span style="color: #059669; font-weight: bold;">Ready for Factory Packing</span>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 35px; text-align: center;">Item #</th>
-              <th>Product Description</th>
-              <th style="width: 130px;">Category</th>
-              <th style="width: 65px; text-align: center;">Unit</th>
-              <th style="width: 75px; text-align: right;">Unit Rate (₹)</th>
-              <th style="width: 50px; text-align: center;">Qty</th>
-              <th style="width: 80px; text-align: right;">Amount (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${summary.cartItems.map((item, index) => `
-              <tr>
-                <td style="text-align: center; font-weight: bold; color: #64748b;">${item.id}</td>
-                <td><strong>${item.name}</strong></td>
-                <td style="color: #475569;">${item.category}</td>
-                <td style="text-align: center;">${item.per}</td>
-                <td style="text-align: right;">${item.price.toFixed(2)}</td>
-                <td style="text-align: center; font-weight: bold;">${item.qty}</td>
-                <td style="text-align: right; font-weight: bold;">${item.itemTotal.toFixed(2)}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-
-        <!-- Bottom Section: Terms & Summary -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 14px; gap: 20px;">
-          <div style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px; background: #f8fafc; font-size: 11px;">
-            <strong style="color: #0f172a; font-size: 12px; text-transform: uppercase;">🏭 Sivakasi Factory Dispatch Terms:</strong>
-            <ul style="margin: 6px 0 0 16px; padding: 0; line-height: 1.5; color: #475569;">
-              <li>Orders are safely packed with moisture-resistant industrial carton boxes.</li>
-              <li>Dispatches are routed via leading road parcel transport services across India.</li>
-              <li>For any order inquiries, tracking, or bulk modifications, contact our support team at <strong>+91 6383144854 / +91 99440 87728</strong>.</li>
-            </ul>
-          </div>
-
-          <div style="width: 290px; border: 1px solid #0f172a; border-radius: 6px; overflow: hidden; background: #ffffff;">
-            <div style="display: flex; justify-content: space-between; padding: 7px 12px; font-size: 12px; border-bottom: 1px solid #e2e8f0;">
-              <span>Product Varieties:</span>
-              <strong>${summary.totalItems}</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 7px 12px; font-size: 12px; border-bottom: 1px solid #e2e8f0;">
-              <span>Total Package Units:</span>
-              <strong>${summary.totalQuantity} boxes</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; padding: 10px 12px; background: #0f172a; color: #ffffff; font-size: 13px; font-weight: 800;">
-              <span>NET ORDER TOTAL:</span>
-              <span>₹ ${summary.grandTotal.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top: 24px; padding-top: 12px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10px; color: #64748b;">
-          <div>
-            <strong>SELVAGANAPATHY TRADERS (SUN FLAG FIREWORKS)</strong><br>
-            Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu<br>
-            Helpline: +91 6383144854 | Email: selvaganapathytraders@gmail.com
-          </div>
-          <div style="text-align: right;">
-            <div style="height: 35px;"></div>
-            <div style="border-top: 1px solid #0f172a; padding-top: 3px; font-weight: bold; color: #0f172a;">
-              Authorized Signatory / For Selvaganapathy Traders
-            </div>
-          </div>
-        </div>
+        ${buildEstimateHtml(summary, cust, orderNo, dateStr)}
       </body>
       </html>
     `;
@@ -1299,13 +1270,10 @@ UPI ID: 6383144854@upi`;
           const cust = state.customer;
           const orderNo = getOrGenerateOrderNo();
 
-          // 1. Automatically generate/download customer PDF estimate
-          printOrderEstimate();
+          // 1. Automatically generate/download PDF and send PDF copy to shopkeeper
+          downloadAndSendPdf(summary, cust, orderNo);
 
-          // 2. Automatically dispatch receipt copy to Shopkeeper & Customer in the background
-          dispatchOrderToBackend(summary, cust, orderNo);
-
-          // 3. Start automatic redirection back to main shopping catalog
+          // 2. Start automatic redirection back to main shopping catalog
           startAutoRedirectCountdown();
         }
       });
@@ -1432,7 +1400,7 @@ UPI ID: 6383144854@upi`;
     }
     if (downloadPdfBtn) {
       downloadPdfBtn.addEventListener("click", () => {
-        printOrderEstimate();
+        downloadAndSendPdf(getCartSummary(), state.customer, getOrGenerateOrderNo());
         startAutoRedirectCountdown();
       });
     }
