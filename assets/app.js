@@ -928,6 +928,10 @@ UPI ID: 6383144854@upi`;
 
   // Build Clean Corporate A4 HTML Estimate
   function buildEstimateHtml(summary, cust, orderNo, dateStr) {
+    const safeSummary = summary || { totalItems: 0, totalQuantity: 0, grandTotal: 0, cartItems: [] };
+    const safeCust = cust || {};
+    const items = safeSummary.cartItems || [];
+
     return `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0f172a; padding: 20px; font-size: 12px; background: #ffffff; width: 100%; box-sizing: border-box;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px;">
@@ -951,15 +955,15 @@ UPI ID: 6383144854@upi`;
         <div style="display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px;">
           <div style="line-height: 1.5;">
             <strong style="color: #0f172a;">CUSTOMER DETAILS:</strong><br>
-            <strong>Name:</strong> ${cust.name || 'Valued Customer'}<br>
-            <strong>Phone:</strong> ${cust.phone || '-'}<br>
-            ${cust.email ? '<strong>Email:</strong> ' + cust.email + '<br>' : ''}
-            <strong>Address:</strong> ${cust.address || '-'}${cust.city ? ', ' + cust.city : ''}${cust.pincode ? ' - ' + cust.pincode : ''}
+            <strong>Name:</strong> ${safeCust.name || 'Valued Customer'}<br>
+            <strong>Phone:</strong> ${safeCust.phone || '-'}<br>
+            ${safeCust.email ? '<strong>Email:</strong> ' + safeCust.email + '<br>' : ''}
+            <strong>Address:</strong> ${safeCust.address || '-'}${safeCust.city ? ', ' + safeCust.city : ''}${safeCust.pincode ? ' - ' + safeCust.pincode : ''}
           </div>
           <div style="text-align: right; line-height: 1.5;">
             <strong style="color: #0f172a;">ORDER SUMMARY:</strong><br>
-            <strong>Product Varieties:</strong> ${summary.totalItems}<br>
-            <strong>Total Package Units:</strong> ${summary.totalQuantity}<br>
+            <strong>Product Varieties:</strong> ${safeSummary.totalItems || items.length}<br>
+            <strong>Total Package Units:</strong> ${safeSummary.totalQuantity || 0}<br>
             <strong>Booking Status:</strong> <span style="color: #059669; font-weight: bold; background: #dcfce7; padding: 2px 6px; border-radius: 4px;">✅ Confirmed &amp; Dispatched</span><br>
             <strong>Dispatch Status:</strong> <span style="color: #059669; font-weight: bold;">Ready for Factory Packing</span>
           </div>
@@ -978,15 +982,15 @@ UPI ID: 6383144854@upi`;
             </tr>
           </thead>
           <tbody>
-            ${summary.cartItems.map((item, index) => `
+            ${items.map((item, index) => `
               <tr style="border-bottom: 1px solid #e2e8f0; background: ${index % 2 === 1 ? '#f8fafc' : '#ffffff'};">
                 <td style="padding: 5px 8px; text-align: center; font-weight: bold; color: #64748b;">${item.id}</td>
                 <td style="padding: 5px 8px; font-weight: bold;">${item.name}</td>
                 <td style="padding: 5px 8px; color: #475569;">${item.category}</td>
                 <td style="padding: 5px 8px; text-align: center;">${item.per}</td>
-                <td style="padding: 5px 8px; text-align: right;">${item.price.toFixed(2)}</td>
+                <td style="padding: 5px 8px; text-align: right;">${Number(item.price || 0).toFixed(2)}</td>
                 <td style="padding: 5px 8px; text-align: center; font-weight: bold;">${item.qty}</td>
-                <td style="padding: 5px 8px; text-align: right; font-weight: bold;">${item.itemTotal.toFixed(2)}</td>
+                <td style="padding: 5px 8px; text-align: right; font-weight: bold;">${Number(item.itemTotal || (item.qty * item.price) || 0).toFixed(2)}</td>
               </tr>
             `).join("")}
           </tbody>
@@ -1005,15 +1009,15 @@ UPI ID: 6383144854@upi`;
           <div style="width: 250px; border: 1px solid #0f172a; border-radius: 6px; overflow: hidden; background: #ffffff;">
             <div style="display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10px; border-bottom: 1px solid #e2e8f0;">
               <span>Product Varieties:</span>
-              <strong>${summary.totalItems}</strong>
+              <strong>${safeSummary.totalItems || items.length}</strong>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 5px 10px; font-size: 10px; border-bottom: 1px solid #e2e8f0;">
               <span>Total Packages:</span>
-              <strong>${summary.totalQuantity} boxes</strong>
+              <strong>${safeSummary.totalQuantity || 0} boxes</strong>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 7px 10px; background: #0f172a; color: #ffffff; font-size: 11px; font-weight: 800;">
               <span>NET TOTAL:</span>
-              <span>₹ ${summary.grandTotal.toFixed(2)}</span>
+              <span>₹ ${Number(safeSummary.grandTotal || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -1033,9 +1037,22 @@ UPI ID: 6383144854@upi`;
 
   // Real PDF Generator with Location Picker Dialog (Protected against double triggers)
   let isGeneratingPdf = false;
+  let lastCompletedOrder = null;
+
   async function downloadAndSendPdf(summary, cust, orderNo) {
     if (isGeneratingPdf) return;
     isGeneratingPdf = true;
+
+    // Use passed data or fall back to lastCompletedOrder or current cart
+    const activeSummary = (summary && summary.cartItems && summary.cartItems.length > 0)
+      ? summary
+      : (lastCompletedOrder?.summary || getCartSummary());
+
+    const activeCust = (cust && (cust.name || cust.phone))
+      ? cust
+      : (lastCompletedOrder?.cust || state.customer || {});
+
+    const activeOrderNo = orderNo || lastCompletedOrder?.orderNo || getOrGenerateOrderNo();
 
     const dateStr = new Date().toLocaleDateString("en-US", {
       day: "2-digit",
@@ -1045,21 +1062,21 @@ UPI ID: 6383144854@upi`;
 
     const container = document.createElement("div");
     container.id = "pdf-render-container";
-    container.innerHTML = buildEstimateHtml(summary, cust, orderNo, dateStr);
-    container.style.position = "fixed";
+    container.innerHTML = buildEstimateHtml(activeSummary, activeCust, activeOrderNo, dateStr);
+    container.style.position = "absolute";
     container.style.left = "0";
     container.style.top = "0";
-    container.style.width = "780px";
+    container.style.width = "794px";
     container.style.background = "#ffffff";
-    container.style.zIndex = "-9999";
-    container.style.opacity = "1";
-    container.style.pointerEvents = "none";
+    container.style.color = "#000000";
+    container.style.zIndex = "99999999";
+    container.style.boxSizing = "border-box";
     document.body.appendChild(container);
 
     if (window.html2pdf) {
       const opt = {
         margin: [6, 6, 6, 6],
-        filename: `Estimate_${orderNo}.pdf`,
+        filename: `Estimate_${activeOrderNo}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
           scale: 2, 
@@ -1073,15 +1090,15 @@ UPI ID: 6383144854@upi`;
       };
 
       try {
-        // Generate PDF Blob in single pass
-        const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
+        // Generate PDF Blob using html2pdf's worker output
+        const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
 
-        // 1. Prompt Save Location using File System Access API (showSaveFilePicker)
+        // 1. Try File System Access API (showSaveFilePicker)
         let savedWithLocationPicker = false;
         if (typeof window.showSaveFilePicker === "function") {
           try {
             const handle = await window.showSaveFilePicker({
-              suggestedName: `Estimate_${orderNo}.pdf`,
+              suggestedName: `Estimate_${activeOrderNo}.pdf`,
               types: [{
                 description: 'PDF Document (*.pdf)',
                 accept: { 'application/pdf': ['.pdf'] }
@@ -1097,18 +1114,9 @@ UPI ID: 6383144854@upi`;
           }
         }
 
-        // Fallback for browsers without File System Access API (Firefox, Safari iOS, etc.)
+        // Fallback for browsers without File System Access API
         if (!savedWithLocationPicker) {
-          const blobUrl = URL.createObjectURL(pdfBlob);
-          const downloadLink = document.createElement("a");
-          downloadLink.href = blobUrl;
-          downloadLink.download = `Estimate_${orderNo}.pdf`;
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          setTimeout(() => {
-            if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
-            URL.revokeObjectURL(blobUrl);
-          }, 5000);
+          await html2pdf().set(opt).from(container).save();
         }
       } catch (err) {
         console.warn("html2pdf generation error, using popup fallback:", err);
@@ -1450,6 +1458,13 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
           const summary = getCartSummary();
           const cust = state.customer;
           const orderNo = getOrGenerateOrderNo();
+
+          // Save lastCompletedOrder so PDF generator always has complete items data even if cart resets
+          lastCompletedOrder = {
+            summary: JSON.parse(JSON.stringify(summary)),
+            cust: JSON.parse(JSON.stringify(cust)),
+            orderNo: orderNo
+          };
 
           // 1. Dispatch rich itemized order confirmation email to Customer & Shopkeeper
           dispatchOrderEmails(summary, cust, orderNo);
