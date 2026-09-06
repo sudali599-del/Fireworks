@@ -837,15 +837,13 @@ UPI ID: 6383144854@upi`;
   // Open Gmail to Customer's Email (with CC to Shopkeeper)
   function openCustomerGmailOrder() {
     const cust = state.customer;
-    if (!cust.email || !cust.email.trim()) {
-      alert("No customer email address was entered in the order form. You can forward the quotation from your inbox!");
-      return;
-    }
     const summary = getCartSummary();
     const orderNo = getOrGenerateOrderNo();
-    const subject = encodeURIComponent(`Diwali 2026 Order Confirmation #${orderNo} - Selvaganapathy Traders Sivakasi`);
+    const subject = encodeURIComponent(`Diwali 2026 Order Estimate & Receipt #${orderNo} - Selvaganapathy Traders Sivakasi`);
     const body = encodeURIComponent(buildOrderPlainText());
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(cust.email.trim())}&cc=${DEFAULT_GMAIL}&su=${subject}&body=${body}`;
+    const targetEmail = cust.email && cust.email.trim() ? encodeURIComponent(cust.email.trim()) : "";
+    const ccParam = encodeURIComponent("selvaganapathytraders@gmail.com,sudali599@gmail.com");
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${targetEmail}&cc=${ccParam}&su=${subject}&body=${body}`;
     window.open(gmailUrl, "_blank");
   }
 
@@ -1483,6 +1481,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
     // Wire up Order Success Modal Action Buttons
     const closeSuccessBtn = document.getElementById("close-order-success-btn");
     const downloadPdfBtn = document.getElementById("order-success-download-pdf-btn");
+    const emailReceiptBtn = document.getElementById("order-success-email-receipt-btn");
     const successCopyBtn = document.getElementById("order-success-copy-text-btn");
     const newOrderBtn = document.getElementById("order-success-new-order-btn");
 
@@ -1496,6 +1495,12 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
       downloadPdfBtn.addEventListener("click", () => {
         downloadAndSendPdf(getCartSummary(), state.customer, getOrGenerateOrderNo());
         startAutoRedirectCountdown();
+      });
+    }
+    if (emailReceiptBtn) {
+      emailReceiptBtn.addEventListener("click", () => {
+        if (redirectTimer) clearInterval(redirectTimer);
+        openCustomerGmailOrder();
       });
     }
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
