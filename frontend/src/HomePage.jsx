@@ -1410,61 +1410,23 @@ export default function HomePage() {
     }
   };
 
-  const handleLogoInteraction = () => {
-    const isMobile = window.innerWidth <= 768;
-    let pressTimer;
-    let clickCount = 0;
-
-    const mobileHandlers = {
-      onTouchStart: (e) => {
-        e.preventDefault();
-        setIsPressed(true);
-        pressTimer = setTimeout(() => {
-          window.location.href = "/_admin";
-        }, 800);
-      },
-      onTouchEnd: (e) => {
-        e.preventDefault();
-        setIsPressed(false);
-        clearTimeout(pressTimer);
-      },
-      onTouchCancel: (e) => {
-        e.preventDefault();
-        setIsPressed(false);
-        clearTimeout(pressTimer);
-      },
-    };
-
-    const desktopHandlers = {
-      onClick: (e) => {
-        e.preventDefault();
-        clickCount++;
-        if (clickCount === 1) {
-          setTimeout(() => {
-            if (clickCount === 2) {
-              window.location.href = "/_admin";
-            }
-            clickCount = 0;
-          }, 300);
-        }
-      },
-    };
-    return isMobile ? mobileHandlers : desktopHandlers;
-  };
-
   const InteractiveLogo = () => (
-    <div
-      className={`cursor-pointer transition-all duration-200 select-none ${isPressed ? "scale-95 opacity-80" : "hover:scale-110"}`}
-      {...handleLogoInteraction()}
+    <a
+      href="/_admin"
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        window.location.href = "/_admin";
+      }}
+      className="cursor-pointer transition-all duration-200 select-none hover:scale-105 inline-block"
       title="Selvaganapathy Traders"
     >
       <img
-        src="./logo.png"
+        src="/logo.png"
         alt="Selvaganapathy Traders Logo"
         className="h-12 w-12 sm:h-14 sm:w-14 object-contain filter drop-shadow-[0_0_12px_rgba(255,215,0,0.6)]"
         draggable={false}
       />
-    </div>
+    </a>
   );
 
   return (
