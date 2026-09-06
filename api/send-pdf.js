@@ -38,11 +38,11 @@ module.exports = async function handler(req, res) {
     }
 
     const attachments = [];
-    if (pdfBase64) {
+    if (pdfBase64 && pdfBase64.length > 50) {
+      const cleanBase64 = pdfBase64.replace(/^data:application\/pdf;base64,/, '');
       attachments.push({
         filename: `Estimate_${orderNo || '2026'}.pdf`,
-        content: pdfBase64.replace(/^data:application\/pdf;base64,/, ''),
-        encoding: 'base64',
+        content: Buffer.from(cleanBase64, 'base64'),
         contentType: 'application/pdf',
       });
     }

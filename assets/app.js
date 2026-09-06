@@ -1001,11 +1001,16 @@ UPI ID: 6383144854@upi`;
     });
 
     const container = document.createElement("div");
+    container.id = "pdf-render-container";
     container.innerHTML = buildEstimateHtml(summary, cust, orderNo, dateStr);
-    container.style.position = "absolute";
-    container.style.left = "-9999px";
+    container.style.position = "fixed";
+    container.style.left = "0";
     container.style.top = "0";
     container.style.width = "780px";
+    container.style.background = "#ffffff";
+    container.style.zIndex = "-9999";
+    container.style.opacity = "1";
+    container.style.pointerEvents = "none";
     document.body.appendChild(container);
 
     if (window.html2pdf) {
@@ -1013,16 +1018,34 @@ UPI ID: 6383144854@upi`;
         margin: [6, 6, 6, 6],
         filename: `Estimate_${orderNo}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          scrollY: 0,
+          scrollX: 0,
+          windowWidth: 800,
+          backgroundColor: '#ffffff'
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
       try {
-        // 1. Download PDF file directly for customer
-        await html2pdf().set(opt).from(container).save();
-
-        // 2. Generate PDF Blob and send directly to shopkeeper emails
+        // Generate PDF Blob in single pass
         const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
+
+        // 1. Download PDF file directly to customer's browser
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = blobUrl;
+        downloadLink.download = `Estimate_${orderNo}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        setTimeout(() => {
+          if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
+          URL.revokeObjectURL(blobUrl);
+        }, 5000);
+
+        // 2. Dispatch real PDF Blob to shopkeeper & customer via backend SMTP
         dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary);
       } catch (err) {
         console.warn("html2pdf generation error, using popup fallback:", err);
