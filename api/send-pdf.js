@@ -20,14 +20,14 @@ module.exports = async function handler(req, res) {
 
   try {
     const { orderNo, customer, summary, pdfBase64 } = req.body;
-    const senderEmail = process.env.SENDER_EMAIL || 'selvaganapathytraders@gmail.com';
+    const senderEmail = process.env.SENDER_EMAIL || 'sudali599@gmail.com';
     const mailPassword = process.env.MAIL_PASSWORD;
     const shopkeeperEmails = ['selvaganapathytraders@gmail.com', 'sudali599@gmail.com'];
 
     if (!mailPassword) {
       console.warn('MAIL_PASSWORD not set in environment variables');
       return res.status(200).json({ 
-        message: 'Order registered. Please configure MAIL_PASSWORD in Vercel for direct SMTP dispatch.',
+        message: 'Order registered. Please configure MAIL_PASSWORD in Vercel or environment for automated SMTP delivery.',
         orderNo 
       });
     }
