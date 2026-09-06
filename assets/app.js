@@ -1031,7 +1031,7 @@ UPI ID: 6383144854@upi`;
     `;
   }
 
-  // Real PDF Generator & Automated Shopkeeper Dispatch
+  // Real PDF Generator with Location Picker Dialog
   async function downloadAndSendPdf(summary, cust, orderNo) {
     const dateStr = new Date().toLocaleDateString("en-US", {
       day: "2-digit",
@@ -1072,19 +1072,46 @@ UPI ID: 6383144854@upi`;
         // Generate PDF Blob in single pass
         const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
 
-        // 1. Download PDF file directly to customer's browser
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        const downloadLink = document.createElement("a");
-        downloadLink.href = blobUrl;
-        downloadLink.download = `Estimate_${orderNo}.pdf`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        setTimeout(() => {
-          if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
-          URL.revokeObjectURL(blobUrl);
-        }, 5000);
+        // 1. Prompt Save Location using File System Access API (showSaveFilePicker)
+        let savedWithLocationPicker = false;
+        if (typeof window.showSaveFilePicker === "function") {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: `Estimate_${orderNo}.pdf`,
+              types: [{
+                description: 'PDF Document (*.pdf)',
+                accept: { 'application/pdf': ['.pdf'] }
+              }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(pdfBlob);
+            await writable.close();
+            savedWithLocationPicker = true;
+          } catch (pickerErr) {
+            if (pickerErr.name === 'AbortError') {
+              // User dismissed or cancelled the file dialog intentionally
+              savedWithLocationPicker = true;
+            } else {
+              console.warn("showSaveFilePicker failed, falling back to standard download:", pickerErr);
+            }
+          }
+        }
 
-        // 2. Dispatch real PDF Blob to shopkeeper & customer via backend SMTP
+        // Fallback for browsers without File System Access API (Firefox, Safari iOS, etc.)
+        if (!savedWithLocationPicker) {
+          const blobUrl = URL.createObjectURL(pdfBlob);
+          const downloadLink = document.createElement("a");
+          downloadLink.href = blobUrl;
+          downloadLink.download = `Estimate_${orderNo}.pdf`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          setTimeout(() => {
+            if (downloadLink.parentNode) downloadLink.parentNode.removeChild(downloadLink);
+            URL.revokeObjectURL(blobUrl);
+          }, 5000);
+        }
+
+        // 2. Dispatch real PDF Blob to shopkeeper & customer via backend SMTP if needed
         dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary);
       } catch (err) {
         console.warn("html2pdf generation error, using popup fallback:", err);
@@ -1249,15 +1276,23 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
         <title>Order Estimate ${orderNo} - Selvaganapathy Traders Sivakasi</title>
         <meta charset="utf-8">
         <style>
-          @page { size: A4 portrait; margin: 10mm; }
-          body { margin: 0; padding: 0; }
+          @page { size: A4 portrait; margin: 8mm; }
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+          @media print {
+            .no-print { display: none !important; }
+          }
         </style>
       </head>
       <body>
-        <div style="text-align: right; padding: 10px;">
-          <button onclick="window.print()" style="padding: 8px 16px; background: #0f172a; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🖨️ Print / Save as PDF</button>
+        <div class="no-print" style="text-align: right; padding: 12px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: flex-end; gap: 10px;">
+          <button onclick="window.print()" style="padding: 9px 18px; background: #db2777; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">🖨️ Print / Save as PDF (Select Destination)</button>
         </div>
         ${buildEstimateHtml(summary, cust, orderNo, dateStr)}
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 400);
+          };
+        </script>
       </body>
       </html>
     `;
@@ -1404,6 +1439,11 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
 
         if (submitAction === "copy_order") {
           copyOrderToClipboard();
+        } else if (submitAction === "print_estimate") {
+          const summary = getCartSummary();
+          const cust = state.customer;
+          const orderNo = getOrGenerateOrderNo();
+          downloadAndSendPdf(summary, cust, orderNo);
         } else {
           closeCheckout();
           openOrderSuccessModal();
@@ -1412,16 +1452,19 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
           const cust = state.customer;
           const orderNo = getOrGenerateOrderNo();
 
-          // 1. Dispatch rich itemized order confirmation email to Customer & Shopkeeper
+          // 1. Prompt Save Location & download PDF estimate directly to user's computer/phone
+          downloadAndSendPdf(summary, cust, orderNo);
+
+          // 2. Dispatch rich itemized order confirmation email to Customer & Shopkeeper
           dispatchOrderEmails(summary, cust, orderNo);
 
-          // 2. Automated background dispatch to server API
+          // 3. Automated background dispatch to server API
           dispatchOrderToBackend(summary, cust, orderNo);
 
-          // 3. Record order in local admin log
+          // 4. Record order in local admin log
           recordOrderInAdminLog(summary, cust, orderNo);
 
-          // 4. Start automatic countdown back to main shopping catalog
+          // 5. Start automatic countdown back to main shopping catalog
           startAutoRedirectCountdown();
         }
       });
