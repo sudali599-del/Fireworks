@@ -21,13 +21,13 @@ module.exports = async function handler(req, res) {
   try {
     const { orderNo, customer, summary, pdfBase64 } = req.body;
     const senderEmail = process.env.SENDER_EMAIL || 'sudali599@gmail.com';
-    const mailPassword = process.env.MAIL_PASSWORD;
+    const mailPassword = process.env.MAIL_PASSWORD || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD;
     const shopkeeperEmails = ['selvaganapathytraders@gmail.com', 'sudali599@gmail.com'];
 
     if (!mailPassword) {
-      console.warn('MAIL_PASSWORD not set in environment variables');
+      console.warn('MAIL_PASSWORD / GMAIL_APP_PASSWORD not set in environment variables');
       return res.status(200).json({ 
-        message: 'Order registered. Please configure MAIL_PASSWORD in Vercel or environment for automated SMTP delivery.',
+        message: 'Order registered. Please configure MAIL_PASSWORD or GMAIL_APP_PASSWORD in Vercel for automated SMTP delivery.',
         orderNo 
       });
     }
@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
       service: 'gmail',
       auth: {
         user: senderEmail,
-        pass: mailPassword,
+        pass: mailPassword.replace(/\s+/g, ''), // Strip spaces from Gmail App Password
       },
     });
 

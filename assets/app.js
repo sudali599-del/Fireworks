@@ -1060,17 +1060,40 @@ UPI ID: 6383144854@upi`;
         `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
       ).join("\n");
 
-      // 2. Prepare FormSubmit data for Shopkeeper Dispatch
+      // 2. Prepare FormSubmit data for Shopkeeper & Customer Auto-Receipt
+      const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
       const formSubmitData = new FormData();
       formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
-      formSubmitData.append("_subject", `New Customer Purchase Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
+      formSubmitData.append("_subject", `New Order & Estimate Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
       formSubmitData.append("_template", "table");
       formSubmitData.append("_captcha", "false");
+      formSubmitData.append("_cc", "selvaganapathytraders@gmail.com");
+
+      if (hasCustEmail) {
+        formSubmitData.append("email", cust.email.trim());
+        formSubmitData.append("_replyto", cust.email.trim());
+        const autoResponseMsg = `Thank you for your order with Selvaganapathy Traders (Sun Flag Fireworks Sivakasi)!
+
+Order Reference: ${orderNo}
+Customer Name: ${cust.name || 'Valued Customer'}
+Phone: ${cust.phone || '-'}
+Delivery Address: ${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}
+Ordered Items: ${summary.totalItems} varieties (${summary.totalQuantity} total packages)
+Grand Total: Rs. ${summary.grandTotal.toFixed(2)}
+
+${fullListText}
+
+Your official estimate PDF is attached. We are processing your order and will contact you for dispatch.
+Helpline: +91 6383144854 / +91 99440 87728
+Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
+        formSubmitData.append("_autoresponse", autoResponseMsg);
+      }
+
       formSubmitData.append("Order_Reference", orderNo);
       formSubmitData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
       formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
       formSubmitData.append("Customer_Phone", cust.phone || "-");
-      formSubmitData.append("Customer_Email", (cust.email && cust.email.trim()) ? cust.email.trim() : "Not Provided");
+      formSubmitData.append("Customer_Email", hasCustEmail ? cust.email.trim() : "Not Provided");
       formSubmitData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
       formSubmitData.append("Total_Varieties", `${summary.totalItems} items`);
       formSubmitData.append("Total_Packages", `${summary.totalQuantity} boxes`);
@@ -1084,14 +1107,8 @@ UPI ID: 6383144854@upi`;
       });
       formSubmitData.append("Full_Receipt_Bill", fullListText);
 
-      // Send to Primary Shopkeeper Endpoint: sudali599@gmail.com
+      // Single verified dispatch to sudali599@gmail.com (CCs selvaganapathytraders and autoresponds to customer)
       fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
-        method: "POST",
-        body: formSubmitData
-      }).catch(() => {});
-
-      // Also send to Selvaganapathy Traders Gmail in parallel
-      fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
         method: "POST",
         body: formSubmitData
       }).catch(() => {});
@@ -1324,40 +1341,9 @@ UPI ID: 6383144854@upi`;
       }, 1000);
     }
 
-    // Automatic Background Dispatch to Backend API & Shopkeeper Email
+    // Automatic Background Dispatch to Backend API Server
     async function dispatchOrderToBackend(summary, cust, orderNo) {
-      const emailContent = {
-        _subject: `New Diwali 2026 Purchase [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`,
-        _template: "table",
-        _captcha: "false",
-        Order_Reference: orderNo,
-        Order_Date: new Date().toLocaleDateString("en-IN"),
-        Customer_Name: cust.name || "Valued Customer",
-        Customer_Phone: cust.phone || "-",
-        Customer_Email: cust.email || "Not Provided",
-        Delivery_Address: `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`,
-        Special_Notes: cust.notes || "None",
-        Total_Varieties: `${summary.totalItems} items`,
-        Total_Packages: `${summary.totalQuantity} boxes`,
-        Grand_Total_INR: `₹ ${summary.grandTotal.toFixed(2)}`,
-        Itemized_Bill: summary.cartItems.map(i => `#${i.id} | ${i.name} (${i.category}) | ${i.per} | Rate: ₹${i.price.toFixed(2)} | Qty: ${i.qty} | Total: ₹${i.itemTotal.toFixed(2)}`).join("\n\n")
-      };
-
-      // 1. Direct FormSubmit Email Dispatch to Shopkeeper (selvaganapathytraders@gmail.com)
-      fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(emailContent)
-      }).catch(e => console.warn("Shopkeeper email dispatch:", e));
-
-      // 2. Direct FormSubmit Email Dispatch to Shopkeeper Backup (sudali599@gmail.com)
-      fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(emailContent)
-      }).catch(e => console.warn("Backup email dispatch:", e));
-
-      // 3. REST API Server endpoint (Fireworks-Server)
+      // 1. REST API Server endpoint (Fireworks-Server)
       const payload = {
         orderNo,
         date: new Date().toLocaleDateString("en-IN"),
