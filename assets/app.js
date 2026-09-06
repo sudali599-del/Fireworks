@@ -1093,17 +1093,41 @@ UPI ID: 6383144854@upi`;
   }
 
   // Dispatch direct official email receipt to Customer & Shopkeeper
-  function dispatchOrderEmails(summary, cust, orderNo) {
-    // 1. Send direct authenticated Google SMTP email to both Customer & Shopkeeper
-    fetch("/api/send-pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orderNo,
-        customer: cust,
-        summary
-      })
-    }).catch(() => {});
+  async function dispatchOrderEmails(summary, cust, orderNo) {
+    let sentViaServerless = false;
+
+    // 1. Send direct authenticated Google SMTP email via relative /api/send-pdf
+    try {
+      const resp = await fetch("/api/send-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderNo,
+          customer: cust,
+          summary
+        })
+      });
+      if (resp.ok) sentViaServerless = true;
+    } catch (e) {
+      console.warn("Local /api/send-pdf unreachable, trying live endpoint...", e);
+    }
+
+    // Fallback to live production endpoint if run locally
+    if (!sentViaServerless) {
+      try {
+        await fetch("https://wwwselvaganapathytradersin.vercel.app/api/send-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderNo,
+            customer: cust,
+            summary
+          })
+        });
+      } catch (e) {
+        console.warn("Production /api/send-pdf fallback error:", e);
+      }
+    }
 
     // Full Multi-Line Summary Table
     const fullListText = summary.cartItems.map((item, idx) => 
@@ -1630,46 +1654,86 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
 
       if (adminSendOtpBtn) {
         adminSendOtpBtn.disabled = true;
-        adminSendOtpBtn.innerHTML = `<span>⏳ Sending OTP...</span>`;
+        adminSendOtpBtn.innerHTML = `<span>⏳ Sending OTP Code...</span>`;
+      }
+      if (adminResendOtpBtn) {
+        adminResendOtpBtn.disabled = true;
+        adminResendOtpBtn.innerHTML = `<span>⏳ Sending...</span>`;
       }
 
-      // 1. Dispatch OTP via authenticated Google SMTP serverless function
-      fetch("/api/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: "sudali599@gmail.com",
-          otp: currentGeneratedOtp
-        })
-      }).catch(() => {});
+      let sentSuccessfully = false;
 
-      // 2. Also dispatch to FormSubmit as backup
-      const otpFormData = new FormData();
-      otpFormData.append("_subject", `🔐 Admin Login OTP Verification [${currentGeneratedOtp}] - Selvaganapathy Traders`);
-      otpFormData.append("_template", "box");
-      otpFormData.append("_captcha", "false");
-      otpFormData.append("Admin_Email", "sudali599@gmail.com");
-      otpFormData.append("Login_OTP_Code", currentGeneratedOtp);
-      fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
-        method: "POST",
-        body: otpFormData
-      }).catch(() => {});
-
-      setTimeout(() => {
-        if (adminSendOtpBtn) {
-          adminSendOtpBtn.disabled = false;
-          adminSendOtpBtn.innerHTML = `<span>🔑 Send OTP to Access Admin Panel</span>`;
+      // 1. Dispatch OTP via current domain /api/send-otp
+      try {
+        const resp = await fetch("/api/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: "sudali599@gmail.com",
+            otp: currentGeneratedOtp
+          })
+        });
+        if (resp.ok) {
+          sentSuccessfully = true;
         }
-        if (adminStepSendOtp) adminStepSendOtp.classList.add("hidden");
-        if (adminStepVerifyOtp) adminStepVerifyOtp.classList.remove("hidden");
-        showAdminAlert(`✓ 6-Digit OTP dispatched to sudali599@gmail.com. (Master PIN: 599599)`, false);
-        if (adminOtpInput) adminOtpInput.focus();
-      }, 500);
+      } catch (err) {
+        console.warn("Primary /api/send-otp unreachable, trying live production endpoint...", err);
+      }
+
+      // 2. If running locally or on static port, fallback to live production endpoint
+      if (!sentSuccessfully) {
+        try {
+          const resp = await fetch("https://wwwselvaganapathytradersin.vercel.app/api/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: "sudali599@gmail.com",
+              otp: currentGeneratedOtp
+            })
+          });
+          if (resp.ok) {
+            sentSuccessfully = true;
+          }
+        } catch (err) {
+          console.warn("Live production endpoint fallback error:", err);
+        }
+      }
+
+      // 3. Backup dispatch via FormSubmit
+      try {
+        const otpFormData = new FormData();
+        otpFormData.append("_subject", `🔐 Admin Login OTP Verification [${currentGeneratedOtp}] - Selvaganapathy Traders`);
+        otpFormData.append("_template", "box");
+        otpFormData.append("_captcha", "false");
+        otpFormData.append("Admin_Email", "sudali599@gmail.com");
+        otpFormData.append("Login_OTP_Code", currentGeneratedOtp);
+        fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
+          method: "POST",
+          body: otpFormData
+        }).catch(() => {});
+      } catch (e) {}
+
+      if (adminSendOtpBtn) {
+        adminSendOtpBtn.disabled = false;
+        adminSendOtpBtn.innerHTML = `<span>🔑 Send OTP to Access Admin Panel</span>`;
+      }
+      if (adminResendOtpBtn) {
+        adminResendOtpBtn.disabled = false;
+        adminResendOtpBtn.innerHTML = `<span>🔄 Resend Code</span>`;
+      }
+
+      if (adminStepSendOtp) adminStepSendOtp.classList.add("hidden");
+      if (adminStepVerifyOtp) adminStepVerifyOtp.classList.remove("hidden");
+      showAdminAlert(`✓ 6-Digit OTP dispatched to sudali599@gmail.com & selvaganapathytraders@gmail.com. (Master PIN: 599599)`, false);
+      if (adminOtpInput) {
+        adminOtpInput.value = "";
+        adminOtpInput.focus();
+      }
     }
 
     // Verify OTP
     function verifyAdminOtp() {
-      const enteredOtp = (adminOtpInput ? adminOtpInput.value : "").trim();
+      const enteredOtp = (adminOtpInput ? adminOtpInput.value : "").replace(/\D/g, "").trim();
       const savedOtp = sessionStorage.getItem("ADMIN_CURRENT_OTP");
 
       if (!enteredOtp) {
@@ -1685,7 +1749,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
           if (adminAuthContainer) adminAuthContainer.classList.add("hidden");
           if (adminDashboardContainer) adminDashboardContainer.classList.remove("hidden");
           initAdminDashboard();
-        }, 500);
+        }, 300);
       } else {
         showAdminAlert("Invalid OTP code. Please check your email or enter Master PIN 599599.");
       }

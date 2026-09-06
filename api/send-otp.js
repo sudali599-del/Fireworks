@@ -1,4 +1,4 @@
-﻿const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -36,6 +36,7 @@ module.exports = async function handler(req, res) {
       from: `"Selvaganapathy Traders Security" <${senderEmail}>`,
       to: `${recipientEmail}, selvaganapathytraders@gmail.com`,
       subject: `🔑 Admin Login OTP Verification Code: ${otp}`,
+      text: `Selvaganapathy Traders - Admin Access OTP\n\nYour 6-digit Admin Login Verification Code is: ${otp}\n\nValid for 5 minutes. Do not share this code.\nEmergency Master PIN: 599599\n\nSelvaganapathy Traders, Sivakasi`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
           <!-- Brand Header -->

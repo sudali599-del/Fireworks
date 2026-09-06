@@ -54,6 +54,7 @@ module.exports = async function handler(req, res) {
       to: recipients.join(', '),
       replyTo: customer?.email && customer.email.trim() ? customer.email.trim() : senderEmail,
       subject: `Official Order Confirmation [${orderNo}] - ₹${summary?.grandTotal?.toFixed(2) || '0.00'} (${customer?.name || 'Customer'})`,
+      text: `Selvaganapathy Traders - Order Confirmation [${orderNo}]\n\nCustomer: ${customer?.name || 'Customer'}\nPhone: ${customer?.phone || '-'}\nTotal Amount: ₹${summary?.grandTotal?.toFixed(2) || '0.00'}\nTotal Items: ${summary?.totalQuantity || 0} Boxes\n\nThank you for shopping with Selvaganapathy Traders, Sivakasi!`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background: #f8fafc;">
           <!-- Brand Header -->
