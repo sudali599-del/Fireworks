@@ -246,8 +246,18 @@ const CATEGORIES = [
 
 // Export for Window and Node environments
 if (typeof window !== "undefined") {
-  window.PRODUCTS_DATA = PRODUCTS_DATA;
+  try {
+    const customData = localStorage.getItem("FIREWORKS_PRODUCTS_CUSTOM");
+    if (customData) {
+      window.PRODUCTS_DATA = JSON.parse(customData);
+    } else {
+      window.PRODUCTS_DATA = PRODUCTS_DATA;
+    }
+  } catch (e) {
+    window.PRODUCTS_DATA = PRODUCTS_DATA;
+  }
   window.CATEGORIES = CATEGORIES;
+  window.FACTORY_DEFAULT_PRODUCTS = PRODUCTS_DATA;
 }
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { PRODUCTS_DATA, CATEGORIES };

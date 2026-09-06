@@ -154,7 +154,7 @@
       <!-- Brand Logo & Name -->
       <div class="flex items-center gap-3">
         <div class="flex-shrink-0">
-          <div class="cursor-pointer transition-all duration-200 select-none hover:scale-105">
+          <div id="brand-logo-btn" class="cursor-pointer transition-all duration-200 select-none hover:scale-105 active:scale-95" title="Double click for Admin Access">
             <img alt="Selvaganapathy Traders Logo" class="h-12 w-12 sm:h-14 sm:w-14 object-contain m-0 p-0 transition-all duration-200 brightness-100 rounded-full border border-yellow-400/30" draggable="false" src="./logo.png">
           </div>
         </div>
@@ -687,6 +687,271 @@
           💬 WhatsApp
         </a>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN ACCESS & CONTROL PANEL MODAL ==================== -->
+  <div id="admin-modal" class="fixed inset-0 z-[10005] bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-slate-950 border border-purple-500/40 rounded-2xl sm:rounded-3xl max-w-5xl w-full p-4 sm:p-6 shadow-2xl relative my-auto max-h-[94vh] flex flex-col overflow-hidden">
+      
+      <!-- Close Modal Button -->
+      <button id="close-admin-modal-btn" class="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white flex items-center justify-center font-bold">✕</button>
+
+      <!-- ================= 1. ADMIN LOGIN / OTP SCREEN ================= -->
+      <div id="admin-auth-container" class="max-w-md w-full mx-auto my-auto py-6 space-y-6">
+        
+        <!-- Header -->
+        <div class="text-center">
+          <div class="w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-purple-600/30">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-white tracking-wide">Admin Access</h2>
+          <p id="admin-auth-subtitle" class="text-gray-400 text-xs sm:text-sm mt-1">Authorized Administrator Portal • Selvaganapathy Traders</p>
+        </div>
+
+        <!-- Alert messages -->
+        <div id="admin-auth-alert" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
+        <!-- Step 1: Send OTP -->
+        <div id="admin-step-send-otp" class="space-y-4">
+          <div class="bg-gray-900 border border-white/10 rounded-xl p-4 text-center space-y-1">
+            <span class="text-xs text-gray-400 font-medium">Authorized Administrator Email:</span>
+            <div class="font-mono text-yellow-300 font-bold text-sm sm:text-base">sudali599@gmail.com</div>
+          </div>
+
+          <div class="bg-blue-950/50 border border-blue-500/30 rounded-xl p-3.5 text-xs text-blue-200">
+            🛡️ <strong>Security Verification:</strong> A One-Time Password (OTP) will be dispatched to your authorized email address to securely access the admin dashboard.
+          </div>
+
+          <button 
+            id="admin-send-otp-btn" 
+            class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-black text-sm shadow-xl shadow-purple-600/30 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-98 transition-all"
+          >
+            <span>🔑 Send OTP to Access Admin Panel</span>
+          </button>
+
+          <!-- Master PIN shortcut option -->
+          <div class="text-center pt-2">
+            <button id="admin-use-master-pin-btn" class="text-xs text-gray-500 hover:text-purple-300 underline">
+              Or enter Master Security Code directly
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Verify OTP -->
+        <div id="admin-step-verify-otp" class="hidden space-y-4">
+          <div class="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-3 text-center text-xs text-emerald-300">
+            ✓ OTP dispatched to <strong class="font-mono text-yellow-300">sudali599@gmail.com</strong>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-300 mb-1.5 text-center">Enter 6-Digit OTP / Master Code</label>
+            <input 
+              type="text" 
+              id="admin-otp-input" 
+              maxlength="6" 
+              placeholder="• • • • • •" 
+              class="w-full py-3 px-4 bg-gray-900 border border-purple-500/50 rounded-xl text-center text-2xl sm:text-3xl font-mono tracking-widest text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <p class="text-[11px] text-gray-500 text-center mt-1">Please check your inbox &amp; spam folder</p>
+          </div>
+
+          <button 
+            id="admin-verify-otp-btn" 
+            class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-98 transition-all"
+          >
+            <span>✓ Verify &amp; Open Admin Dashboard</span>
+          </button>
+
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <button id="admin-back-btn" class="flex-1 py-2 px-3 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs font-semibold text-center border border-white/10">
+              ← Go Back
+            </button>
+            <button id="admin-resend-otp-btn" class="flex-1 py-2 px-3 rounded-lg bg-purple-950/60 hover:bg-purple-900 text-purple-200 text-xs font-semibold text-center border border-purple-500/30">
+              🔄 Resend OTP
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= 2. ADMIN DASHBOARD CONTROL PANEL ================= -->
+      <div id="admin-dashboard-container" class="hidden flex flex-col h-full overflow-hidden space-y-4">
+        
+        <!-- Dashboard Header -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10 flex-shrink-0">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white font-bold text-base shadow">
+              ⚙️
+            </div>
+            <div>
+              <h2 class="text-base sm:text-lg font-black text-white">Admin Control Center</h2>
+              <p class="text-xs text-emerald-400 font-medium">🟢 Logged in as Administrator (sudali599@gmail.com)</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="admin-export-catalog-btn" class="py-1.5 px-3 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 text-indigo-200 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5">
+              <span>📥 Export JSON</span>
+            </button>
+            <button id="admin-logout-btn" class="py-1.5 px-3 rounded-lg bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5">
+              <span>🔒 Lock &amp; Logout</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap items-center gap-2 border-b border-white/10 pb-2.5 flex-shrink-0">
+          <button id="admin-tab-btn-products" class="admin-tab-btn active px-3.5 py-1.5 rounded-lg bg-purple-600 text-white font-bold text-xs shadow flex items-center gap-1.5">
+            <span>📦 Products &amp; Prices</span>
+            <span id="admin-badge-count" class="bg-black/40 text-yellow-300 px-1.5 py-0.2 rounded text-[10px]">164</span>
+          </button>
+
+          <button id="admin-tab-btn-add" class="admin-tab-btn px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold text-xs flex items-center gap-1.5 border border-white/10">
+            <span>➕ Add New Cracker</span>
+          </button>
+
+          <button id="admin-tab-btn-orders" class="admin-tab-btn px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold text-xs flex items-center gap-1.5 border border-white/10">
+            <span>📋 Customer Orders</span>
+          </button>
+
+          <button id="admin-tab-btn-settings" class="admin-tab-btn px-3.5 py-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 font-bold text-xs flex items-center gap-1.5 border border-white/10">
+            <span>📞 Store Contacts</span>
+          </button>
+        </div>
+
+        <!-- Tab 1: Products Table -->
+        <div id="admin-tab-view-products" class="admin-tab-view flex-1 flex flex-col overflow-hidden space-y-3">
+          <!-- Filter bar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+              <input 
+                type="text" 
+                id="admin-search-input" 
+                placeholder="Search crackers by name or #ID..." 
+                class="w-full sm:w-64 px-3 py-1.5 bg-gray-900 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
+              <select id="admin-cat-filter" class="px-2.5 py-1.5 bg-gray-900 border border-white/20 rounded-lg text-white text-xs focus:outline-none">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="admin-reset-defaults-btn" class="text-xs text-rose-400 hover:text-rose-300 underline font-semibold">
+                Reset to Factory Catalog
+              </button>
+            </div>
+          </div>
+
+          <!-- Products Table -->
+          <div class="flex-1 overflow-y-auto border border-white/10 rounded-xl bg-gray-900/50">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="sticky top-0 bg-slate-900 border-b border-white/10 text-gray-300 z-10">
+                <tr>
+                  <th class="p-2.5 text-center w-12">#ID</th>
+                  <th class="p-2.5">Cracker Description</th>
+                  <th class="p-2.5">Category</th>
+                  <th class="p-2.5 text-center">Unit</th>
+                  <th class="p-2.5 text-right">Price (₹)</th>
+                  <th class="p-2.5 text-center w-28">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-products-table-body" class="divide-y divide-white/5">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab 2: Add / Edit Product -->
+        <div id="admin-tab-view-add" class="admin-tab-view hidden flex-1 overflow-y-auto max-w-xl mx-auto w-full p-2 space-y-4">
+          <div class="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-4">
+            <h3 id="admin-form-title" class="text-base font-extrabold text-white flex items-center gap-2">
+              <span>➕ Add New Cracker Product</span>
+            </h3>
+
+            <form id="admin-product-form" class="space-y-3">
+              <input type="hidden" id="admin-product-edit-id" value="">
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-300 mb-1">Product Code # <span class="text-pink-500">*</span></label>
+                  <input type="number" id="admin-input-id" required placeholder="e.g. 165" class="w-full px-3 py-2 bg-slate-950 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-300 mb-1">Category <span class="text-pink-500">*</span></label>
+                  <select id="admin-input-category" required class="w-full px-3 py-2 bg-slate-950 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-gray-300 mb-1">Cracker Name <span class="text-pink-500">*</span></label>
+                <input type="text" id="admin-input-name" required placeholder="e.g. 12 Shot Colour Pearl Fountain" class="w-full px-3 py-2 bg-slate-950 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-300 mb-1">Unit / Pack <span class="text-pink-500">*</span></label>
+                  <input type="text" id="admin-input-per" required placeholder="e.g. 1 Box / 1 Pkt" class="w-full px-3 py-2 bg-slate-950 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-300 mb-1">Price (₹) <span class="text-pink-500">*</span></label>
+                  <input type="number" step="0.01" id="admin-input-price" required placeholder="e.g. 350.00" class="w-full px-3 py-2 bg-slate-950 border border-white/20 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+                </div>
+              </div>
+
+              <div class="pt-2 flex items-center gap-2">
+                <button type="submit" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-1.5">
+                  <span>💾 Save Cracker to Store</span>
+                </button>
+                <button type="button" id="admin-cancel-edit-btn" class="hidden py-3 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold text-xs">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab 3: Customer Orders List -->
+        <div id="admin-tab-view-orders" class="admin-tab-view hidden flex-1 overflow-y-auto border border-white/10 rounded-xl bg-gray-900/50 p-3 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white">📋 Placed Orders History</h3>
+            <button id="admin-clear-orders-btn" class="text-xs text-rose-400 hover:text-rose-300 underline font-semibold">Clear Log</button>
+          </div>
+          <div id="admin-orders-list-container" class="space-y-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Tab 4: Store Contact Settings -->
+        <div id="admin-tab-view-settings" class="admin-tab-view hidden flex-1 overflow-y-auto max-w-xl mx-auto w-full p-2 space-y-4">
+          <div class="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-3">
+            <h3 class="text-base font-extrabold text-white">📞 Factory &amp; Payment Details</h3>
+            
+            <div class="space-y-2 text-xs text-gray-300">
+              <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
+                <strong>Primary Helpline:</strong> +91 6383144854
+              </div>
+              <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
+                <strong>Secondary Mobile / WhatsApp:</strong> +91 99440 87728
+              </div>
+              <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
+                <strong>Shopkeeper Email 1:</strong> selvaganapathytraders@gmail.com
+              </div>
+              <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
+                <strong>Shopkeeper Email 2 (Admin):</strong> sudali599@gmail.com
+              </div>
+              <div class="p-2.5 rounded-lg bg-black/40 border border-white/10">
+                <strong>UPI Payment VPA:</strong> 9944087728@okbizaxis (Selvaganapathy Traders)
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </div>
 

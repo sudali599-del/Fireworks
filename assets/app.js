@@ -1445,14 +1445,17 @@ Helpline: +91 6383144854 / +91 99440 87728`
           // 2. Automated background FormSubmit form submission with autoresponder
           submitNativeFormToFormSubmit(orderNo, cust, summary);
 
-          // 3. Automatically open Gmail with complete itemized order if email is entered
+          // 3. Record order in local admin log
+          recordOrderInAdminLog(summary, cust, orderNo);
+
+          // 4. Automatically open Gmail with complete itemized order if email is entered
           if (cust.email && cust.email.trim() && cust.email.includes("@")) {
             setTimeout(() => {
               openCustomerGmailOrder();
             }, 300);
           }
 
-          // 4. Start automatic redirection back to main shopping catalog
+          // 5. Start automatic redirection back to main shopping catalog
           startAutoRedirectCountdown();
         }
       });
@@ -1645,6 +1648,514 @@ Helpline: +91 6383144854 / +91 99440 87728`
     if (printPricelistBtn) {
       printPricelistBtn.addEventListener("click", () => {
         window.print();
+      });
+    }
+    // ==========================================
+    // ADMIN PANEL & OTP AUTHENTICATION SYSTEM
+    // ==========================================
+    const adminModal = document.getElementById("admin-modal");
+    const closeAdminBtn = document.getElementById("close-admin-modal-btn");
+    const brandLogoBtn = document.getElementById("brand-logo-btn");
+
+    const adminAuthContainer = document.getElementById("admin-auth-container");
+    const adminDashboardContainer = document.getElementById("admin-dashboard-container");
+    const adminStepSendOtp = document.getElementById("admin-step-send-otp");
+    const adminStepVerifyOtp = document.getElementById("admin-step-verify-otp");
+    const adminAuthAlert = document.getElementById("admin-auth-alert");
+
+    const adminSendOtpBtn = document.getElementById("admin-send-otp-btn");
+    const adminVerifyOtpBtn = document.getElementById("admin-verify-otp-btn");
+    const adminResendOtpBtn = document.getElementById("admin-resend-otp-btn");
+    const adminBackBtn = document.getElementById("admin-back-btn");
+    const adminOtpInput = document.getElementById("admin-otp-input");
+    const adminUseMasterPinBtn = document.getElementById("admin-use-master-pin-btn");
+    const adminLogoutBtn = document.getElementById("admin-logout-btn");
+
+    const adminTabBtnProducts = document.getElementById("admin-tab-btn-products");
+    const adminTabBtnAdd = document.getElementById("admin-tab-btn-add");
+    const adminTabBtnOrders = document.getElementById("admin-tab-btn-orders");
+    const adminTabBtnSettings = document.getElementById("admin-tab-btn-settings");
+
+    const adminTabViewProducts = document.getElementById("admin-tab-view-products");
+    const adminTabViewAdd = document.getElementById("admin-tab-view-add");
+    const adminTabViewOrders = document.getElementById("admin-tab-view-orders");
+    const adminTabViewSettings = document.getElementById("admin-tab-view-settings");
+
+    const adminProductsTableBody = document.getElementById("admin-products-table-body");
+    const adminSearchInput = document.getElementById("admin-search-input");
+    const adminCatFilter = document.getElementById("admin-cat-filter");
+    const adminBadgeCount = document.getElementById("admin-badge-count");
+    const adminResetDefaultsBtn = document.getElementById("admin-reset-defaults-btn");
+
+    const adminProductForm = document.getElementById("admin-product-form");
+    const adminFormTitle = document.getElementById("admin-form-title");
+    const adminProductEditId = document.getElementById("admin-product-edit-id");
+    const adminInputId = document.getElementById("admin-input-id");
+    const adminInputCategory = document.getElementById("admin-input-category");
+    const adminInputName = document.getElementById("admin-input-name");
+    const adminInputPer = document.getElementById("admin-input-per");
+    const adminInputPrice = document.getElementById("admin-input-price");
+    const adminCancelEditBtn = document.getElementById("admin-cancel-edit-btn");
+    const adminOrdersListContainer = document.getElementById("admin-orders-list-container");
+    const adminClearOrdersBtn = document.getElementById("admin-clear-orders-btn");
+
+    let currentGeneratedOtp = "";
+
+    function showAdminAlert(msg, isError = true) {
+      if (!adminAuthAlert) return;
+      adminAuthAlert.textContent = msg;
+      adminAuthAlert.className = `p-3 rounded-xl text-xs font-semibold ${isError ? 'bg-rose-950/80 text-rose-300 border border-rose-500/40' : 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'}`;
+      adminAuthAlert.classList.remove("hidden");
+    }
+
+    function hideAdminAlert() {
+      if (adminAuthAlert) adminAuthAlert.classList.add("hidden");
+    }
+
+    function openAdminModal() {
+      if (!adminModal) return;
+      hideAdminAlert();
+      const isAuth = sessionStorage.getItem("FIREWORKS_ADMIN_AUTH") === "true";
+      if (isAuth) {
+        if (adminAuthContainer) adminAuthContainer.classList.add("hidden");
+        if (adminDashboardContainer) adminDashboardContainer.classList.remove("hidden");
+        initAdminDashboard();
+      } else {
+        if (adminAuthContainer) adminAuthContainer.classList.remove("hidden");
+        if (adminDashboardContainer) adminDashboardContainer.classList.add("hidden");
+        if (adminStepSendOtp) adminStepSendOtp.classList.remove("hidden");
+        if (adminStepVerifyOtp) adminStepVerifyOtp.classList.add("hidden");
+        if (adminOtpInput) adminOtpInput.value = "";
+      }
+      adminModal.classList.remove("hidden");
+    }
+
+    function closeAdminModal() {
+      if (adminModal) adminModal.classList.add("hidden");
+    }
+
+    // Send OTP to Authorized Admin Email
+    async function sendAdminOtp() {
+      currentGeneratedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      sessionStorage.setItem("ADMIN_CURRENT_OTP", currentGeneratedOtp);
+
+      if (adminSendOtpBtn) {
+        adminSendOtpBtn.disabled = true;
+        adminSendOtpBtn.innerHTML = `<span>⏳ Sending OTP...</span>`;
+      }
+
+      // 1. Dispatch OTP via FormSubmit
+      const otpFormData = new FormData();
+      otpFormData.append("_subject", `🔐 Admin Login OTP Verification [${currentGeneratedOtp}] - Selvaganapathy Traders`);
+      otpFormData.append("_template", "box");
+      otpFormData.append("_captcha", "false");
+      otpFormData.append("Admin_Email", "sudali599@gmail.com");
+      otpFormData.append("Login_OTP_Code", currentGeneratedOtp);
+      otpFormData.append("Security_Notice", "This OTP is valid for 5 minutes for Selvaganapathy Traders Admin Panel access.");
+
+      fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
+        method: "POST",
+        body: otpFormData
+      }).catch(() => {});
+
+      // 2. Also dispatch to backend NestJS mail service if reachable
+      fetch("https://fireworks-server.vercel.app/mail/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "sudali599@gmail.com" })
+      }).catch(() => {});
+
+      setTimeout(() => {
+        if (adminSendOtpBtn) {
+          adminSendOtpBtn.disabled = false;
+          adminSendOtpBtn.innerHTML = `<span>🔑 Send OTP to Access Admin Panel</span>`;
+        }
+        if (adminStepSendOtp) adminStepSendOtp.classList.add("hidden");
+        if (adminStepVerifyOtp) adminStepVerifyOtp.classList.remove("hidden");
+        showAdminAlert(`✓ 6-Digit OTP dispatched to sudali599@gmail.com. (Master PIN: 599599)`, false);
+        if (adminOtpInput) adminOtpInput.focus();
+      }, 600);
+    }
+
+    // Verify OTP
+    function verifyAdminOtp() {
+      const enteredOtp = (adminOtpInput ? adminOtpInput.value : "").trim();
+      const savedOtp = sessionStorage.getItem("ADMIN_CURRENT_OTP");
+
+      if (!enteredOtp) {
+        showAdminAlert("Please enter the 6-digit OTP sent to your email.");
+        return;
+      }
+
+      // Accept generated OTP OR Master Emergency PIN 599599
+      if (enteredOtp === savedOtp || enteredOtp === "599599" || (currentGeneratedOtp && enteredOtp === currentGeneratedOtp)) {
+        showAdminAlert("✓ Login Successful! Loading Admin Dashboard...", false);
+        sessionStorage.setItem("FIREWORKS_ADMIN_AUTH", "true");
+        setTimeout(() => {
+          if (adminAuthContainer) adminAuthContainer.classList.add("hidden");
+          if (adminDashboardContainer) adminDashboardContainer.classList.remove("hidden");
+          initAdminDashboard();
+        }, 500);
+      } else {
+        showAdminAlert("Invalid OTP code. Please check your email or enter Master PIN 599599.");
+      }
+    }
+
+    // Admin Tabs Switcher
+    function switchAdminTab(tabName) {
+      document.querySelectorAll(".admin-tab-btn").forEach(btn => {
+        btn.classList.remove("active", "bg-purple-600", "text-white");
+        btn.classList.add("bg-gray-900", "text-gray-300");
+      });
+      document.querySelectorAll(".admin-tab-view").forEach(view => view.classList.add("hidden"));
+
+      if (tabName === "products") {
+        if (adminTabBtnProducts) {
+          adminTabBtnProducts.classList.add("active", "bg-purple-600", "text-white");
+          adminTabBtnProducts.classList.remove("bg-gray-900", "text-gray-300");
+        }
+        if (adminTabViewProducts) adminTabViewProducts.classList.remove("hidden");
+        renderAdminProducts();
+      } else if (tabName === "add") {
+        if (adminTabBtnAdd) {
+          adminTabBtnAdd.classList.add("active", "bg-purple-600", "text-white");
+          adminTabBtnAdd.classList.remove("bg-gray-900", "text-gray-300");
+        }
+        if (adminTabViewAdd) adminTabViewAdd.classList.remove("hidden");
+      } else if (tabName === "orders") {
+        if (adminTabBtnOrders) {
+          adminTabBtnOrders.classList.add("active", "bg-purple-600", "text-white");
+          adminTabBtnOrders.classList.remove("bg-gray-900", "text-gray-300");
+        }
+        if (adminTabViewOrders) adminTabViewOrders.classList.remove("hidden");
+        renderAdminOrders();
+      } else if (tabName === "settings") {
+        if (adminTabBtnSettings) {
+          adminTabBtnSettings.classList.add("active", "bg-purple-600", "text-white");
+          adminTabBtnSettings.classList.remove("bg-gray-900", "text-gray-300");
+        }
+        if (adminTabViewSettings) adminTabViewSettings.classList.remove("hidden");
+      }
+    }
+
+    // Initialize Dashboard Content
+    function initAdminDashboard() {
+      populateAdminCategories();
+      renderAdminProducts();
+      switchAdminTab("products");
+    }
+
+    function populateAdminCategories() {
+      const categories = window.CATEGORIES || [];
+      if (adminCatFilter) {
+        adminCatFilter.innerHTML = `<option value="">All Categories</option>` + categories.map(c => `<option value="${c}">${c}</option>`).join("");
+      }
+      if (adminInputCategory) {
+        adminInputCategory.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
+      }
+    }
+
+    // Render Products Table in Admin Panel
+    function renderAdminProducts() {
+      if (!adminProductsTableBody) return;
+      const searchTerm = (adminSearchInput ? adminSearchInput.value : "").toLowerCase().trim();
+      const catFilter = adminCatFilter ? adminCatFilter.value : "";
+
+      let list = window.PRODUCTS_DATA || [];
+      if (searchTerm) {
+        list = list.filter(p => p.name.toLowerCase().includes(searchTerm) || String(p.id).includes(searchTerm));
+      }
+      if (catFilter) {
+        list = list.filter(p => p.category === catFilter);
+      }
+
+      if (adminBadgeCount) adminBadgeCount.textContent = (window.PRODUCTS_DATA || []).length;
+
+      if (list.length === 0) {
+        adminProductsTableBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-gray-500 font-medium">No matching crackers found.</td></tr>`;
+        return;
+      }
+
+      adminProductsTableBody.innerHTML = list.map(p => `
+        <tr class="hover:bg-slate-900/60 transition-colors">
+          <td class="p-2.5 text-center font-bold text-gray-400 font-mono">#${p.id}</td>
+          <td class="p-2.5 font-bold text-white">${p.name}</td>
+          <td class="p-2.5 text-gray-300 text-xs">${p.category}</td>
+          <td class="p-2.5 text-center text-gray-400">${p.per}</td>
+          <td class="p-2.5 text-right font-extrabold text-emerald-400">₹ ${p.price.toFixed(2)}</td>
+          <td class="p-2.5 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <button data-id="${p.id}" class="admin-edit-prod-btn py-1 px-2 rounded bg-purple-950/70 hover:bg-purple-900 text-purple-200 border border-purple-500/30 text-[11px] font-bold">✏️ Edit</button>
+              <button data-id="${p.id}" class="admin-delete-prod-btn py-1 px-2 rounded bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-500/30 text-[11px] font-bold">🗑️ Del</button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      // Bind edit and delete handlers
+      adminProductsTableBody.querySelectorAll(".admin-edit-prod-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = parseInt(btn.getAttribute("data-id"), 10);
+          editAdminProduct(id);
+        });
+      });
+
+      adminProductsTableBody.querySelectorAll(".admin-delete-prod-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = parseInt(btn.getAttribute("data-id"), 10);
+          deleteAdminProduct(id);
+        });
+      });
+    }
+
+    function editAdminProduct(id) {
+      const prod = (window.PRODUCTS_DATA || []).find(p => p.id === id);
+      if (!prod) return;
+
+      if (adminProductEditId) adminProductEditId.value = prod.id;
+      if (adminInputId) {
+        adminInputId.value = prod.id;
+        adminInputId.disabled = true;
+      }
+      if (adminInputCategory) adminInputCategory.value = prod.category;
+      if (adminInputName) adminInputName.value = prod.name;
+      if (adminInputPer) adminInputPer.value = prod.per;
+      if (adminInputPrice) adminInputPrice.value = prod.price;
+
+      if (adminFormTitle) adminFormTitle.innerHTML = `<span>✏️ Edit Cracker #${prod.id} (${prod.name})</span>`;
+      if (adminCancelEditBtn) adminCancelEditBtn.classList.remove("hidden");
+
+      switchAdminTab("add");
+    }
+
+    function resetAdminForm() {
+      if (adminProductEditId) adminProductEditId.value = "";
+      if (adminInputId) {
+        adminInputId.value = "";
+        adminInputId.disabled = false;
+      }
+      if (adminInputName) adminInputName.value = "";
+      if (adminInputPer) adminInputPer.value = "1 Box";
+      if (adminInputPrice) adminInputPrice.value = "";
+      if (adminFormTitle) adminFormTitle.innerHTML = `<span>➕ Add New Cracker Product</span>`;
+      if (adminCancelEditBtn) adminCancelEditBtn.classList.add("hidden");
+    }
+
+    function saveAdminProduct(e) {
+      e.preventDefault();
+      const editIdStr = adminProductEditId ? adminProductEditId.value : "";
+      const codeId = parseInt(adminInputId.value, 10);
+      const category = adminInputCategory.value;
+      const name = adminInputName.value.trim();
+      const per = adminInputPer.value.trim();
+      const price = parseFloat(adminInputPrice.value);
+
+      if (isNaN(codeId) || !name || !category || isNaN(price)) {
+        alert("Please fill all required fields properly.");
+        return;
+      }
+
+      if (editIdStr) {
+        // Edit existing
+        const editId = parseInt(editIdStr, 10);
+        const idx = window.PRODUCTS_DATA.findIndex(p => p.id === editId);
+        if (idx !== -1) {
+          window.PRODUCTS_DATA[idx] = { id: editId, category, name, per, price };
+        }
+      } else {
+        // Check if ID exists
+        const exists = window.PRODUCTS_DATA.some(p => p.id === codeId);
+        if (exists) {
+          alert(`Product Code #${codeId} already exists! Please use a unique Code number.`);
+          return;
+        }
+        window.PRODUCTS_DATA.push({ id: codeId, category, name, per, price });
+      }
+
+      // Save custom products to localStorage
+      localStorage.setItem("FIREWORKS_PRODUCTS_CUSTOM", JSON.stringify(window.PRODUCTS_DATA));
+
+      // Refresh Storefront
+      renderProducts();
+      populatePricelistTable();
+      updateCartUI();
+
+      alert("✓ Product saved successfully to store catalog!");
+      resetAdminForm();
+      switchAdminTab("products");
+    }
+
+    function deleteAdminProduct(id) {
+      if (!confirm(`Are you sure you want to delete Product #${id} from the catalog?`)) return;
+      window.PRODUCTS_DATA = window.PRODUCTS_DATA.filter(p => p.id !== id);
+      localStorage.setItem("FIREWORKS_PRODUCTS_CUSTOM", JSON.stringify(window.PRODUCTS_DATA));
+
+      renderProducts();
+      populatePricelistTable();
+      updateCartUI();
+      renderAdminProducts();
+    }
+
+    function resetFactoryDefaults() {
+      if (!confirm("Reset all cracker prices and products to the original factory default 164 items? Any custom added items will be removed.")) return;
+      localStorage.removeItem("FIREWORKS_PRODUCTS_CUSTOM");
+      window.PRODUCTS_DATA = [...(window.FACTORY_DEFAULT_PRODUCTS || [])];
+
+      renderProducts();
+      populatePricelistTable();
+      updateCartUI();
+      renderAdminProducts();
+      alert("✓ Store catalog restored to factory defaults.");
+    }
+
+    function renderAdminOrders() {
+      if (!adminOrdersListContainer) return;
+      let orders = [];
+      try {
+        orders = JSON.parse(localStorage.getItem("FIREWORKS_ORDERS_LOG") || "[]");
+      } catch (e) {
+        orders = [];
+      }
+
+      if (orders.length === 0) {
+        adminOrdersListContainer.innerHTML = `<div class="p-6 text-center text-gray-500 text-xs">No orders recorded yet. New customer orders will appear here automatically.</div>`;
+        return;
+      }
+
+      adminOrdersListContainer.innerHTML = orders.slice().reverse().map(ord => `
+        <div class="p-3 rounded-xl bg-slate-900 border border-white/10 space-y-1.5 text-xs">
+          <div class="flex items-center justify-between border-b border-white/10 pb-1">
+            <strong class="text-yellow-400 font-mono">${ord.orderNo}</strong>
+            <span class="text-gray-400">${ord.date}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-300">Customer: <strong>${ord.customer?.name || 'Customer'}</strong> (${ord.customer?.phone || '-'})</span>
+            <span class="text-emerald-400 font-black text-sm">₹ ${Number(ord.grandTotal || 0).toFixed(2)}</span>
+          </div>
+          <div class="text-gray-400 text-[11px]">
+            ${ord.totalItems || 0} varieties (${ord.totalQuantity || 0} boxes) • Delivery: ${ord.customer?.city || ord.customer?.address || '-'}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // Hook Order Logging in Submit
+    function recordOrderInAdminLog(summary, cust, orderNo) {
+      try {
+        const existing = JSON.parse(localStorage.getItem("FIREWORKS_ORDERS_LOG") || "[]");
+        existing.push({
+          orderNo,
+          date: new Date().toLocaleDateString("en-IN") + " " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+          customer: cust,
+          totalItems: summary.totalItems,
+          totalQuantity: summary.totalQuantity,
+          grandTotal: summary.grandTotal,
+          cartItems: summary.cartItems
+        });
+        localStorage.setItem("FIREWORKS_ORDERS_LOG", JSON.stringify(existing.slice(-100)));
+      } catch (e) {}
+    }
+
+    // Attach Logo Double Click & Mobile Tap Handlers
+    if (brandLogoBtn) {
+      brandLogoBtn.addEventListener("dblclick", e => {
+        e.preventDefault();
+        openAdminModal();
+      });
+
+      let touchTimer = null;
+      let lastTap = 0;
+      brandLogoBtn.addEventListener("touchstart", e => {
+        const now = Date.now();
+        if (now - lastTap < 400) {
+          e.preventDefault();
+          clearTimeout(touchTimer);
+          openAdminModal();
+          lastTap = 0;
+          return;
+        }
+        lastTap = now;
+        touchTimer = setTimeout(() => {
+          openAdminModal();
+        }, 650);
+      });
+      brandLogoBtn.addEventListener("touchend", () => clearTimeout(touchTimer));
+      brandLogoBtn.addEventListener("touchcancel", () => clearTimeout(touchTimer));
+    }
+
+    // Auto-open on /#admin or /_admin
+    if (window.location.hash === "#admin" || window.location.pathname.includes("_admin")) {
+      setTimeout(openAdminModal, 300);
+    }
+
+    if (closeAdminBtn) closeAdminBtn.addEventListener("click", closeAdminModal);
+    if (adminSendOtpBtn) adminSendOtpBtn.addEventListener("click", sendAdminOtp);
+    if (adminVerifyOtpBtn) adminVerifyOtpBtn.addEventListener("click", verifyAdminOtp);
+    if (adminResendOtpBtn) adminResendOtpBtn.addEventListener("click", sendAdminOtp);
+    if (adminBackBtn) {
+      adminBackBtn.addEventListener("click", () => {
+        if (adminStepVerifyOtp) adminStepVerifyOtp.classList.add("hidden");
+        if (adminStepSendOtp) adminStepSendOtp.classList.remove("hidden");
+        hideAdminAlert();
+      });
+    }
+    if (adminUseMasterPinBtn) {
+      adminUseMasterPinBtn.addEventListener("click", () => {
+        if (adminStepSendOtp) adminStepSendOtp.classList.add("hidden");
+        if (adminStepVerifyOtp) adminStepVerifyOtp.classList.remove("hidden");
+        showAdminAlert("Enter Master Security PIN (599599) to bypass OTP.", false);
+        if (adminOtpInput) adminOtpInput.focus();
+      });
+    }
+    if (adminOtpInput) {
+      adminOtpInput.addEventListener("keydown", e => {
+        if (e.key === "Enter") verifyAdminOtp();
+      });
+    }
+    if (adminLogoutBtn) {
+      adminLogoutBtn.addEventListener("click", () => {
+        sessionStorage.removeItem("FIREWORKS_ADMIN_AUTH");
+        closeAdminModal();
+      });
+    }
+
+    // Tab buttons
+    if (adminTabBtnProducts) adminTabBtnProducts.addEventListener("click", () => switchAdminTab("products"));
+    if (adminTabBtnAdd) adminTabBtnAdd.addEventListener("click", () => {
+      resetAdminForm();
+      switchAdminTab("add");
+    });
+    if (adminTabBtnOrders) adminTabBtnOrders.addEventListener("click", () => switchAdminTab("orders"));
+    if (adminTabBtnSettings) adminTabBtnSettings.addEventListener("click", () => switchAdminTab("settings"));
+
+    // Search and filter in Admin
+    if (adminSearchInput) adminSearchInput.addEventListener("input", renderAdminProducts);
+    if (adminCatFilter) adminCatFilter.addEventListener("change", renderAdminProducts);
+    if (adminResetDefaultsBtn) adminResetDefaultsBtn.addEventListener("click", resetFactoryDefaults);
+    if (adminProductForm) adminProductForm.addEventListener("submit", saveAdminProduct);
+    if (adminCancelEditBtn) {
+      adminCancelEditBtn.addEventListener("click", () => {
+        resetAdminForm();
+        switchAdminTab("products");
+      });
+    }
+    if (adminClearOrdersBtn) {
+      adminClearOrdersBtn.addEventListener("click", () => {
+        if (confirm("Clear all order history records?")) {
+          localStorage.removeItem("FIREWORKS_ORDERS_LOG");
+          renderAdminOrders();
+        }
+      });
+    }
+    if (document.getElementById("admin-export-catalog-btn")) {
+      document.getElementById("admin-export-catalog-btn").addEventListener("click", () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.PRODUCTS_DATA, null, 2));
+        const a = document.createElement("a");
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", "Selvaganapathy_Products_2026.json");
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
       });
     }
   }
