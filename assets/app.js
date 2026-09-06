@@ -1031,8 +1031,12 @@ UPI ID: 6383144854@upi`;
     `;
   }
 
-  // Real PDF Generator with Location Picker Dialog
+  // Real PDF Generator with Location Picker Dialog (Protected against double triggers)
+  let isGeneratingPdf = false;
   async function downloadAndSendPdf(summary, cust, orderNo) {
+    if (isGeneratingPdf) return;
+    isGeneratingPdf = true;
+
     const dateStr = new Date().toLocaleDateString("en-US", {
       day: "2-digit",
       month: "short",
@@ -1088,12 +1092,8 @@ UPI ID: 6383144854@upi`;
             await writable.close();
             savedWithLocationPicker = true;
           } catch (pickerErr) {
-            if (pickerErr.name === 'AbortError') {
-              // User dismissed or cancelled the file dialog intentionally
-              savedWithLocationPicker = true;
-            } else {
-              console.warn("showSaveFilePicker failed, falling back to standard download:", pickerErr);
-            }
+            // User dismissed or cancelled the file dialog intentionally
+            savedWithLocationPicker = true;
           }
         }
 
@@ -1110,18 +1110,17 @@ UPI ID: 6383144854@upi`;
             URL.revokeObjectURL(blobUrl);
           }, 5000);
         }
-
-        // 2. Dispatch real PDF Blob to shopkeeper & customer via backend SMTP if needed
-        dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary);
       } catch (err) {
         console.warn("html2pdf generation error, using popup fallback:", err);
         printOrderEstimate();
       } finally {
         if (container.parentNode) container.parentNode.removeChild(container);
+        isGeneratingPdf = false;
       }
     } else {
       printOrderEstimate();
       if (container.parentNode) container.parentNode.removeChild(container);
+      isGeneratingPdf = false;
     }
   }
 
@@ -1452,19 +1451,16 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
           const cust = state.customer;
           const orderNo = getOrGenerateOrderNo();
 
-          // 1. Prompt Save Location & download PDF estimate directly to user's computer/phone
-          downloadAndSendPdf(summary, cust, orderNo);
-
-          // 2. Dispatch rich itemized order confirmation email to Customer & Shopkeeper
+          // 1. Dispatch rich itemized order confirmation email to Customer & Shopkeeper
           dispatchOrderEmails(summary, cust, orderNo);
 
-          // 3. Automated background dispatch to server API
+          // 2. Automated background dispatch to server API
           dispatchOrderToBackend(summary, cust, orderNo);
 
-          // 4. Record order in local admin log
+          // 3. Record order in local admin log
           recordOrderInAdminLog(summary, cust, orderNo);
 
-          // 5. Start automatic countdown back to main shopping catalog
+          // 4. Start automatic countdown back to main shopping catalog
           startAutoRedirectCountdown();
         }
       });
@@ -1550,9 +1546,17 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
       });
     }
     if (downloadPdfBtn) {
-      downloadPdfBtn.addEventListener("click", () => {
-        downloadAndSendPdf(getCartSummary(), state.customer, getOrGenerateOrderNo());
-        startAutoRedirectCountdown();
+      downloadPdfBtn.addEventListener("click", async () => {
+        if (redirectTimer) clearInterval(redirectTimer);
+        const redirectMsg = document.getElementById("order-success-redirect-msg");
+        if (redirectMsg) redirectMsg.style.display = "none";
+
+        const originalHtml = downloadPdfBtn.innerHTML;
+        downloadPdfBtn.innerHTML = `<span>⏳ Preparing PDF...</span>`;
+        await downloadAndSendPdf(getCartSummary(), state.customer, getOrGenerateOrderNo());
+        setTimeout(() => {
+          downloadPdfBtn.innerHTML = originalHtml;
+        }, 2000);
       });
     }
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
