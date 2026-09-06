@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run start:dev",
+    "start:api": "node api/index.js",
     "build": "cd frontend && npm run build",
     "start": "node api/index.js"
   },
