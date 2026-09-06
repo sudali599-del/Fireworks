@@ -1175,6 +1175,83 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
     };
   }
 
+  // Native Hidden Form Post to FormSubmit for Reliable Delivery & Autoresponder
+  function submitNativeFormToFormSubmit(orderNo, cust, summary) {
+    let iframe = document.getElementById("formsubmit-hidden-iframe");
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "formsubmit-hidden-iframe";
+      iframe.name = "formsubmit-hidden-iframe";
+      iframe.style.display = "none";
+      document.body.appendChild(iframe);
+    }
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "https://formsubmit.co/sudali599@gmail.com";
+    form.target = "formsubmit-hidden-iframe";
+    form.style.display = "none";
+
+    const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
+    const targetEmail = hasCustEmail ? cust.email.trim() : "sudali599@gmail.com";
+
+    const fullListText = summary.cartItems.map((item, idx) => 
+      `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
+    ).join("\n");
+
+    const fields = {
+      "_subject": `New Customer Purchase Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`,
+      "_template": "table",
+      "_captcha": "false",
+      "email": targetEmail,
+      "_replyto": targetEmail,
+      "_cc": "selvaganapathytraders@gmail.com",
+      "Order_Reference": orderNo,
+      "Order_Date": new Date().toLocaleDateString("en-IN"),
+      "Customer_Name": cust.name || "Valued Customer",
+      "Customer_Phone": cust.phone || "-",
+      "Customer_Email": hasCustEmail ? targetEmail : "Not Provided",
+      "Delivery_Address": `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`,
+      "Total_Varieties": `${summary.totalItems} items`,
+      "Total_Packages": `${summary.totalQuantity} boxes`,
+      "Grand_Total_INR": `₹ ${summary.grandTotal.toFixed(2)}`,
+      "Ordered_Items_List": fullListText,
+      "_autoresponse": `Thank you for your order with Selvaganapathy Traders (Sun Flag Fireworks Sivakasi)!
+
+Order Reference: ${orderNo}
+Customer Name: ${cust.name || 'Valued Customer'}
+Phone: ${cust.phone || '-'}
+Delivery Address: ${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}
+Ordered Items: ${summary.totalItems} varieties (${summary.totalQuantity} total packages)
+Grand Total: Rs. ${summary.grandTotal.toFixed(2)}
+
+${fullListText}
+
+We have registered your order and will contact you for factory dispatch.
+Helpline: +91 6383144854 / +91 99440 87728`
+    };
+
+    summary.cartItems.forEach((item, index) => {
+      const itemNum = String(index + 1).padStart(2, '0');
+      const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+      fields[`Item_${itemNum}_${cleanName}`] = `#${item.id} | ${item.name} | ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`;
+    });
+
+    for (const [key, value] of Object.entries(fields)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = value;
+      form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => {
+      if (form.parentNode) form.parentNode.removeChild(form);
+    }, 2000);
+  }
+
   // Fallback Print
   function printOrderEstimate() {
     const summary = getCartSummary();
@@ -1365,7 +1442,17 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
           // 1. Automatically generate/download PDF and send PDF copy to shopkeeper
           downloadAndSendPdf(summary, cust, orderNo);
 
-          // 2. Start automatic redirection back to main shopping catalog
+          // 2. Automated background FormSubmit form submission with autoresponder
+          submitNativeFormToFormSubmit(orderNo, cust, summary);
+
+          // 3. Automatically open Gmail with complete itemized order if email is entered
+          if (cust.email && cust.email.trim() && cust.email.includes("@")) {
+            setTimeout(() => {
+              openCustomerGmailOrder();
+            }, 300);
+          }
+
+          // 4. Start automatic redirection back to main shopping catalog
           startAutoRedirectCountdown();
         }
       });
@@ -1373,7 +1460,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
 
     let redirectTimer = null;
     function startAutoRedirectCountdown() {
-      let secondsLeft = 4;
+      let secondsLeft = 6;
       const countdownEl = document.getElementById("redirect-countdown");
       if (countdownEl) countdownEl.textContent = secondsLeft;
 
