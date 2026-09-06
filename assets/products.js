@@ -1,6 +1,6 @@
 /**
  * Selvaganapathy Traders - Sun Flag Fireworks, Sivakasi
- * Official 2026 Price List & Product Catalog (164 Products)
+ * Official 2026 Price List & Product Catalog (167 Products)
  * Pure English Professional Catalog
  */
 

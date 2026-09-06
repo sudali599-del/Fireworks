@@ -157,23 +157,51 @@ UPI ID: 6383144854@upi`;
   // App Initialization
   function init() {
     loadPersistedState();
-    renderCategories();
+    updateGlobalProductCounts();
     renderProducts();
     updateCartUI();
     bindEvents();
     populatePricelistTable();
   }
 
-  // Render Category Navigation Pills
+  // Get Clean Active Categories (Default + Any Dynamic Categories from Custom Products)
+  function getActiveCategories() {
+    const defaultCats = (window.CATEGORIES || []).filter(c => c !== "ALL");
+    const dynamicCats = (window.PRODUCTS_DATA || []).map(p => p.category).filter(Boolean);
+    const combined = Array.from(new Set(["ALL", ...defaultCats, ...dynamicCats]));
+    return combined;
+  }
+
+  // Global Product Counts & Badge Sync
+  function updateGlobalProductCounts() {
+    const total = (window.PRODUCTS_DATA || []).length;
+
+    // Update Admin Panel Badge Count
+    const adminBadge = document.getElementById("admin-badge-count");
+    if (adminBadge) {
+      adminBadge.textContent = total;
+    }
+
+    // Update Pricelist Modal Badge Count
+    const plBadge = document.getElementById("pricelist-badge-count");
+    if (plBadge) {
+      plBadge.textContent = `${total} Items`;
+    }
+
+    // Re-render Storefront Category Navigation Pills
+    renderCategories();
+  }
+
   // Render Category Navigation Pills
   function renderCategories() {
     if (!categoryNav) return;
     
-    categoryNav.innerHTML = window.CATEGORIES.map(cat => {
+    const cats = getActiveCategories();
+    categoryNav.innerHTML = cats.map(cat => {
       const isActive = state.selectedCategory === cat;
       const count = cat === "ALL" 
-        ? window.PRODUCTS_DATA.length 
-        : window.PRODUCTS_DATA.filter(p => p.category === cat).length;
+        ? (window.PRODUCTS_DATA || []).length 
+        : (window.PRODUCTS_DATA || []).filter(p => p.category === cat).length;
 
       return `
         <button 
@@ -670,7 +698,12 @@ UPI ID: 6383144854@upi`;
   function populatePricelistTable() {
     if (!pricelistTableBody) return;
 
-    pricelistTableBody.innerHTML = window.PRODUCTS_DATA.map(p => `
+    const plBadge = document.getElementById("pricelist-badge-count");
+    if (plBadge) {
+      plBadge.textContent = `${(window.PRODUCTS_DATA || []).length} Items`;
+    }
+
+    pricelistTableBody.innerHTML = (window.PRODUCTS_DATA || []).map(p => `
       <tr class="border-b border-slate-800 hover:bg-slate-900/60 transition-colors">
         <td class="px-3 py-2.5 text-center font-bold text-slate-400 text-xs">${p.id}</td>
         <td class="px-3 py-2.5 font-bold text-white text-xs">${p.name}</td>
@@ -1703,7 +1736,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
     }
 
     function populateAdminCategories() {
-      const categories = window.CATEGORIES || [];
+      const categories = getActiveCategories().filter(c => c !== "ALL");
       if (adminCatFilter) {
         adminCatFilter.innerHTML = `<option value="">All Categories</option>` + categories.map(c => `<option value="${c}">${c}</option>`).join("");
       }
@@ -1832,9 +1865,11 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
       // Save custom products to localStorage
       localStorage.setItem("FIREWORKS_PRODUCTS_CUSTOM", JSON.stringify(window.PRODUCTS_DATA));
 
-      // Refresh Storefront
+      // Refresh Storefront, Price List & Dynamic Global Counts
       renderProducts();
       populatePricelistTable();
+      populateAdminCategories();
+      updateGlobalProductCounts();
       updateCartUI();
 
       alert("✓ Product saved successfully to store catalog!");
@@ -1849,17 +1884,22 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
 
       renderProducts();
       populatePricelistTable();
+      populateAdminCategories();
+      updateGlobalProductCounts();
       updateCartUI();
       renderAdminProducts();
     }
 
     function resetFactoryDefaults() {
-      if (!confirm("Reset all cracker prices and products to the original factory default 164 items? Any custom added items will be removed.")) return;
+      const defaultLen = (window.FACTORY_DEFAULT_PRODUCTS || []).length || 167;
+      if (!confirm(`Reset all cracker prices and products to the original factory default ${defaultLen} items? Any custom added items will be removed.`)) return;
       localStorage.removeItem("FIREWORKS_PRODUCTS_CUSTOM");
       window.PRODUCTS_DATA = [...(window.FACTORY_DEFAULT_PRODUCTS || [])];
 
       renderProducts();
       populatePricelistTable();
+      populateAdminCategories();
+      updateGlobalProductCounts();
       updateCartUI();
       renderAdminProducts();
       alert("✓ Store catalog restored to factory defaults.");
