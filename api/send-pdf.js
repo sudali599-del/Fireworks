@@ -21,16 +21,8 @@ module.exports = async function handler(req, res) {
   try {
     const { orderNo, customer, summary, pdfBase64 } = req.body;
     const senderEmail = process.env.SENDER_EMAIL || 'sudali599@gmail.com';
-    const mailPassword = process.env.MAIL_PASSWORD || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD;
+    const mailPassword = process.env.MAIL_PASSWORD || process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASSWORD || 'aalfrphjajyiiwdj';
     const shopkeeperEmails = ['selvaganapathytraders@gmail.com', 'sudali599@gmail.com'];
-
-    if (!mailPassword) {
-      console.warn('MAIL_PASSWORD / GMAIL_APP_PASSWORD not set in environment variables');
-      return res.status(200).json({ 
-        message: 'Order registered. Please configure MAIL_PASSWORD or GMAIL_APP_PASSWORD in Vercel for automated SMTP delivery.',
-        orderNo 
-      });
-    }
 
     const transporter = nodemailer.createTransport({
       service: 'gmail',
