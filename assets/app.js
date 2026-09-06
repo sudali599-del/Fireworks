@@ -1448,14 +1448,7 @@ Helpline: +91 6383144854 / +91 99440 87728`
           // 3. Record order in local admin log
           recordOrderInAdminLog(summary, cust, orderNo);
 
-          // 4. Automatically open Gmail with complete itemized order if email is entered
-          if (cust.email && cust.email.trim() && cust.email.includes("@")) {
-            setTimeout(() => {
-              openCustomerGmailOrder();
-            }, 300);
-          }
-
-          // 5. Start automatic redirection back to main shopping catalog
+          // 4. Start automatic countdown back to main shopping catalog
           startAutoRedirectCountdown();
         }
       });
