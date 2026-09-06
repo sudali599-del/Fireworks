@@ -173,9 +173,25 @@ export default function FireworksBackground() {
 
     animationFrameId = requestAnimationFrame(animate);
 
+    // Click listener to blast fireworks where user clicks
+    const handleGlobalClick = (e) => {
+      // Don't trigger if clicked on an input or button
+      if (['INPUT', 'BUTTON', 'A'].includes(e.target.tagName)) return;
+      const x = e.clientX;
+      const y = e.clientY;
+      // Trigger instant burst
+      const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
+      const count = 90 + Math.floor(Math.random() * 60);
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle(x, y, palette));
+      }
+    };
+    window.addEventListener('pointerdown', handleGlobalClick);
+
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('pointerdown', handleGlobalClick);
     };
   }, []);
 
@@ -183,7 +199,7 @@ export default function FireworksBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0 w-full h-full"
-      style={{ opacity: 0.9, pointerEvents: 'none' }}
+      style={{ opacity: 0.95, pointerEvents: 'none' }}
     />
   );
 }
