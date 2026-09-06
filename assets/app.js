@@ -1059,43 +1059,26 @@ UPI ID: 6383144854@upi`;
     }
   }
 
-  // Dispatch only the PDF file to Shopkeeper, Backups & Customer
-  function dispatchPdfToShopkeeper(pdfBlob, orderNo, cust, summary) {
-    const reader = new FileReader();
-    reader.readAsDataURL(pdfBlob);
-    reader.onloadend = function () {
-      const base64data = reader.result;
+  // Dispatch direct official email receipt to Customer & Shopkeeper
+  function dispatchOrderEmails(summary, cust, orderNo) {
+    // 1. Send direct authenticated Google SMTP email to both Customer & Shopkeeper
+    fetch("/api/send-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderNo,
+        customer: cust,
+        summary
+      })
+    }).catch(() => {});
 
-      // 1. Send to Vercel Serverless Function on same domain (direct SMTP dispatch)
-      fetch("/api/send-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderNo,
-          customer: cust,
-          summary,
-          pdfBase64: base64data
-        })
-      }).catch(() => {});
+    // Full Multi-Line Summary Table
+    const fullListText = summary.cartItems.map((item, idx) => 
+      `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
+    ).join("\n");
 
-      // Full Multi-Line Summary Table
-      const fullListText = summary.cartItems.map((item, idx) => 
-        `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
-      ).join("\n");
-
-      // 2. Prepare FormSubmit data for Shopkeeper & Customer Auto-Receipt
-      const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
-      const formSubmitData = new FormData();
-      formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
-      formSubmitData.append("_subject", `New Order & Estimate Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
-      formSubmitData.append("_template", "table");
-      formSubmitData.append("_captcha", "false");
-      formSubmitData.append("_cc", "selvaganapathytraders@gmail.com");
-
-      if (hasCustEmail) {
-        formSubmitData.append("email", cust.email.trim());
-        formSubmitData.append("_replyto", cust.email.trim());
-        const autoResponseMsg = `Thank you for your order with Selvaganapathy Traders (Sun Flag Fireworks Sivakasi)!
+    const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
+    const autoResponseMsg = hasCustEmail ? `Thank you for your order with Selvaganapathy Traders (Sun Flag Fireworks Sivakasi)!
 
 Order Reference: ${orderNo}
 Customer Name: ${cust.name || 'Valued Customer'}
@@ -1106,40 +1089,12 @@ Grand Total: Rs. ${summary.grandTotal.toFixed(2)}
 
 ${fullListText}
 
-Your official estimate PDF is attached. We are processing your order and will contact you for dispatch.
+We have registered your order and will contact you for factory dispatch.
 Helpline: +91 6383144854 / +91 99440 87728
-Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
-        formSubmitData.append("_autoresponse", autoResponseMsg);
-      }
+Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
 
-      formSubmitData.append("Order_Reference", orderNo);
-      formSubmitData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
-      formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
-      formSubmitData.append("Customer_Phone", cust.phone || "-");
-      formSubmitData.append("Customer_Email", hasCustEmail ? cust.email.trim() : "Not Provided");
-      formSubmitData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
-      formSubmitData.append("Total_Varieties", `${summary.totalItems} items`);
-      formSubmitData.append("Total_Packages", `${summary.totalQuantity} boxes`);
-      formSubmitData.append("Grand_Total_INR", `₹ ${summary.grandTotal.toFixed(2)}`);
-
-      // Add each ordered item with individual line details
-      summary.cartItems.forEach((item, index) => {
-        const itemNum = String(index + 1).padStart(2, '0');
-        const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-        formSubmitData.append(`Item_${itemNum}_${cleanName}`, `Code #${item.id} | ${item.name} (${item.category}) | ${item.per} | Rate: ₹${item.price.toFixed(2)} | Qty: ${item.qty} | Subtotal: ₹${item.itemTotal.toFixed(2)}`);
-      });
-      formSubmitData.append("Full_Receipt_Bill", fullListText);
-
-      // Single verified AJAX dispatch to sudali599@gmail.com (with PDF attachment)
-      fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
-        method: "POST",
-        headers: { "Accept": "application/json" },
-        body: formSubmitData
-      }).catch(() => {});
-
-      // Background Native FormSubmit Post (Guarantees shopkeeper notification and customer autoresponder)
-      submitNativeFormSubmit(orderNo, cust, summary, fullListText, hasCustEmail ? formSubmitData.get("_autoresponse") : null);
-    };
+    // 2. Background FormSubmit Post as secondary backup
+    submitNativeFormSubmit(orderNo, cust, summary, fullListText, autoResponseMsg);
   }
 
   // Native Background FormSubmit POST via Hidden IFrame
@@ -1394,10 +1349,10 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
           const cust = state.customer;
           const orderNo = getOrGenerateOrderNo();
 
-          // 1. Automatically generate/download PDF and send PDF copy to shopkeeper
-          downloadAndSendPdf(summary, cust, orderNo);
+          // 1. Dispatch rich itemized order confirmation email to Customer & Shopkeeper
+          dispatchOrderEmails(summary, cust, orderNo);
 
-          // 2. Automated background dispatch to server & shopkeeper email
+          // 2. Automated background dispatch to server API
           dispatchOrderToBackend(summary, cust, orderNo);
 
           // 3. Record order in local admin log

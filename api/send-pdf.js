@@ -37,16 +37,6 @@ module.exports = async function handler(req, res) {
       recipients.push(customer.email.trim());
     }
 
-    const attachments = [];
-    if (pdfBase64 && pdfBase64.length > 50) {
-      const cleanBase64 = pdfBase64.replace(/^data:application\/pdf;base64,/, '');
-      attachments.push({
-        filename: `Estimate_${orderNo || '2026'}.pdf`,
-        content: Buffer.from(cleanBase64, 'base64'),
-        contentType: 'application/pdf',
-      });
-    }
-
     const itemsRowsHtml = (summary?.cartItems || []).map((item) => `
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 6px 8px; text-align: center; font-size: 11px; color: #64748b;">${item.id || '-'}</td>
@@ -63,7 +53,7 @@ module.exports = async function handler(req, res) {
       from: `"Selvaganapathy Traders" <${senderEmail}>`,
       to: recipients.join(', '),
       replyTo: customer?.email && customer.email.trim() ? customer.email.trim() : senderEmail,
-      subject: `Official Customer Receipt [${orderNo}] - ₹${summary?.grandTotal?.toFixed(2) || '0.00'} (${customer?.name || 'Customer'})`,
+      subject: `Official Order Confirmation [${orderNo}] - ₹${summary?.grandTotal?.toFixed(2) || '0.00'} (${customer?.name || 'Customer'})`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; background: #f8fafc;">
           <!-- Brand Header -->
@@ -77,12 +67,12 @@ module.exports = async function handler(req, res) {
           <div style="background-color: white; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 15px;">
             <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 12px;">
               <div>
-                <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">✓ CUSTOMER ORDER REGISTERED</span>
-                <h3 style="margin: 6px 0 0 0; color: #0f172a; font-size: 15px;">Estimate Ref: ${orderNo}</h3>
+                <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">✓ ORDER CONFIRMED</span>
+                <h3 style="margin: 6px 0 0 0; color: #0f172a; font-size: 15px;">Order Ref: ${orderNo}</h3>
               </div>
               <div style="text-align: right; color: #64748b; font-size: 11px;">
                 <strong>Date:</strong> ${new Date().toLocaleDateString('en-IN')}<br>
-                <strong>Attached:</strong> Estimate_${orderNo}.pdf
+                <strong>Status:</strong> Ready for Dispatch
               </div>
             </div>
 
@@ -123,7 +113,7 @@ module.exports = async function handler(req, res) {
             </table>
 
             <p style="font-size: 11px; color: #64748b; margin: 12px 0 0 0; text-align: center;">
-              📄 <em>The exact official A4 PDF estimate document is also attached to this email.</em>
+              🎆 <em>Thank you for shopping with Selvaganapathy Traders Sivakasi!</em>
             </p>
           </div>
 
@@ -132,7 +122,6 @@ module.exports = async function handler(req, res) {
           </div>
         </div>
       `,
-      attachments,
     };
 
     await transporter.sendMail(mailOptions);
