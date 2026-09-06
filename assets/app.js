@@ -1107,12 +1107,81 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
       });
       formSubmitData.append("Full_Receipt_Bill", fullListText);
 
-      // Single verified dispatch to sudali599@gmail.com (CCs selvaganapathytraders and autoresponds to customer)
+      // Single verified AJAX dispatch to sudali599@gmail.com (with PDF attachment)
       fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
         method: "POST",
+        headers: { "Accept": "application/json" },
         body: formSubmitData
       }).catch(() => {});
+
+      // Background Native FormSubmit Post (Guarantees shopkeeper notification and customer autoresponder)
+      submitNativeFormSubmit(orderNo, cust, summary, fullListText, hasCustEmail ? formSubmitData.get("_autoresponse") : null);
     };
+  }
+
+  // Native Background FormSubmit POST via Hidden IFrame
+  function submitNativeFormSubmit(orderNo, cust, summary, fullListText, autoResponseMsg) {
+    let iframe = document.getElementById("fs-hidden-iframe");
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.id = "fs-hidden-iframe";
+      iframe.name = "fs-hidden-iframe";
+      iframe.style.display = "none";
+      document.body.appendChild(iframe);
+    }
+
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "https://formsubmit.co/sudali599@gmail.com";
+    form.target = "fs-hidden-iframe";
+    form.style.display = "none";
+
+    const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
+
+    const fields = {
+      "_subject": `Diwali Order & Estimate Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`,
+      "_template": "table",
+      "_captcha": "false",
+      "_cc": "selvaganapathytraders@gmail.com",
+      "Order_Reference": orderNo,
+      "Order_Date": new Date().toLocaleDateString("en-IN"),
+      "Customer_Name": cust.name || "Valued Customer",
+      "Customer_Phone": cust.phone || "-",
+      "Customer_Email": hasCustEmail ? cust.email.trim() : "Not Provided",
+      "Delivery_Address": `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`,
+      "Total_Varieties": `${summary.totalItems} items`,
+      "Total_Packages": `${summary.totalQuantity} boxes`,
+      "Grand_Total_INR": `₹ ${summary.grandTotal.toFixed(2)}`,
+      "Ordered_Items_List": fullListText
+    };
+
+    if (hasCustEmail) {
+      fields["email"] = cust.email.trim();
+      fields["_replyto"] = cust.email.trim();
+      if (autoResponseMsg) {
+        fields["_autoresponse"] = autoResponseMsg;
+      }
+    }
+
+    summary.cartItems.forEach((item, index) => {
+      const itemNum = String(index + 1).padStart(2, '0');
+      const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
+      fields[`Item_${itemNum}_${cleanName}`] = `#${item.id} | ${item.name} | ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`;
+    });
+
+    for (const [key, value] of Object.entries(fields)) {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = value;
+      form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => {
+      if (form.parentNode) form.parentNode.removeChild(form);
+    }, 3000);
   }
 
   // Fallback Print
