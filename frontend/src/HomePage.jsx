@@ -1359,7 +1359,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+        const serverUrl = import.meta.env.VITE_SERVER_URL || 'https://fireworksserverref.vercel.app';
         const response = await fetch(`${serverUrl}/products`);
         const contentType = response.headers.get('content-type') || '';
         if (response.ok && contentType.includes('application/json')) {
