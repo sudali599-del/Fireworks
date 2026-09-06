@@ -1213,42 +1213,10 @@ UPI ID: 6383144854@upi`;
 
       const activeOrderNo = orderNo || lastCompletedOrder?.orderNo || getOrGenerateOrderNo();
 
-      // 1. Try Native jsPDF Vector Document Generator
-      const doc = createVectorJsPdfDoc(activeSummary, activeCust, activeOrderNo);
-      if (doc) {
-        const pdfBlob = doc.output('blob');
-
-        // Location Picker Dialog
-        let savedWithPicker = false;
-        if (typeof window.showSaveFilePicker === "function") {
-          try {
-            const handle = await window.showSaveFilePicker({
-              suggestedName: `Estimate_${activeOrderNo}.pdf`,
-              types: [{
-                description: 'PDF Document (*.pdf)',
-                accept: { 'application/pdf': ['.pdf'] }
-              }]
-            });
-            const writable = await handle.createWritable();
-            await writable.write(pdfBlob);
-            await writable.close();
-            savedWithPicker = true;
-          } catch (pickerErr) {
-            savedWithPicker = true; // User intentionally dismissed
-          }
-        }
-
-        if (!savedWithPicker) {
-          doc.save(`Estimate_${activeOrderNo}.pdf`);
-        }
-        return;
-      }
-
-      // 2. Fallback to Print Preview if jsPDF unavailable
-      printOrderEstimate();
+      printOrderEstimate(activeSummary, activeCust, activeOrderNo);
     } catch (err) {
       console.warn("PDF generation error, opening print preview:", err);
-      printOrderEstimate();
+      printOrderEstimate(summary, cust, orderNo);
     } finally {
       isGeneratingPdf = false;
     }
@@ -1381,45 +1349,107 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
     }, 3000);
   }
 
-  // Fallback Print
-  function printOrderEstimate() {
-    const summary = getCartSummary();
-    const cust = state.customer;
-    const dateStr = new Date().toLocaleDateString("en-US", {
+  // Official Print & Save-as-PDF Estimate with Destination Selector
+  function printOrderEstimate(summaryArg, custArg, orderNoArg) {
+    const summary = (summaryArg && summaryArg.cartItems && summaryArg.cartItems.length > 0)
+      ? summaryArg
+      : (lastCompletedOrder?.summary || getCartSummary());
+
+    const cust = (custArg && (custArg.name || custArg.phone))
+      ? custArg
+      : (lastCompletedOrder?.cust || state.customer || {});
+
+    const orderNo = orderNoArg || lastCompletedOrder?.orderNo || getOrGenerateOrderNo();
+
+    const dateStr = new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric"
     });
-    const orderNo = getOrGenerateOrderNo();
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Please allow popups to download or print the e-PDF estimate.");
+      alert("Please allow popups in your browser to view and download your PDF estimate.");
       return;
     }
 
     const htmlContent = `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
       <head>
         <title>Order Estimate ${orderNo} - Selvaganapathy Traders Sivakasi</title>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+          * { box-sizing: border-box; }
           @page { size: A4 portrait; margin: 8mm; }
-          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+          body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f8fafc;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          .toolbar {
+            text-align: right; 
+            padding: 12px 20px; 
+            background: #0f172a; 
+            color: #ffffff;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          }
+          .toolbar-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fde047;
+          }
+          .print-btn {
+            padding: 8px 18px; 
+            background: #d97706; 
+            color: #ffffff; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 800; 
+            font-size: 13px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+          }
+          .print-btn:hover {
+            background: #b45309;
+          }
+          .estimate-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+          }
           @media print {
             .no-print { display: none !important; }
+            body { background: #ffffff; }
+            .estimate-container { margin: 0; box-shadow: none; border-radius: 0; max-width: 100%; }
           }
         </style>
       </head>
       <body>
-        <div class="no-print" style="text-align: right; padding: 12px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: flex-end; gap: 10px;">
-          <button onclick="window.print()" style="padding: 9px 18px; background: #db2777; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">🖨️ Print / Save as PDF (Select Destination)</button>
+        <div class="no-print toolbar">
+          <span class="toolbar-title">📄 Official Order Estimate • Selvaganapathy Traders</span>
+          <button class="print-btn" onclick="window.print()">📥 Save as PDF / Print (Choose Destination)</button>
         </div>
-        ${buildEstimateHtml(summary, cust, orderNo, dateStr)}
+        <div class="estimate-container">
+          ${buildEstimateHtml(summary, cust, orderNo, dateStr)}
+        </div>
         <script>
           window.onload = function() {
-            setTimeout(function() { window.print(); }, 400);
+            setTimeout(function() { 
+              window.print(); 
+            }, 350);
           };
         </script>
       </body>
