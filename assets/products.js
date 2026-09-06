@@ -180,40 +180,43 @@ const PRODUCTS_DATA = [
   { id: 136, category: "SPECIAL FANCY FOUNTAINS", name: 'Carnival / Tweet Bird / Bingo (3 Pcs)', price: 600.00, per: "1 Box" },
   { id: 137, category: "SPECIAL FANCY FOUNTAINS", name: 'Colour Gems Fountain', price: 550.00, per: "1 Box" },
 
-  // SPECIAL FOUNTAINS (138-145)
-  { id: 138, category: "SPECIAL FOUNTAINS", name: 'MRF Bat and Ball', price: 1200.00, per: "1 No" },
-  { id: 139, category: "SPECIAL FOUNTAINS", name: '90 Watts', price: 550.00, per: "1 Box" },
-  { id: 140, category: "SPECIAL FOUNTAINS", name: 'H2O Falls', price: 650.00, per: "1 Box" },
-  { id: 141, category: "SPECIAL FOUNTAINS", name: 'King Fisher / Henieken / Crystal Tinbeer', price: 375.00, per: "1 Box" },
-  { id: 142, category: "SPECIAL FOUNTAINS", name: 'Old is Gold', price: 800.00, per: "1 Box" },
-  { id: 143, category: "SPECIAL FOUNTAINS", name: 'Mini Rail', price: 250.00, per: "1 Box" },
-  { id: 144, category: "SPECIAL FOUNTAINS", name: 'Photo Flash (5 Pcs)', price: 200.00, per: "1 Box" },
-  { id: 145, category: "SPECIAL FOUNTAINS", name: 'I Cone (2 Pcs)', price: 1000.00, per: "1 Box" },
+  // SPECIAL FOUNTAINS (138-148)
+  { id: 138, category: "SPECIAL FOUNTAINS", name: 'Magical Pots (5 Pcs)', price: 1000.00, per: "1 Box" },
+  { id: 139, category: "SPECIAL FOUNTAINS", name: 'Diamond Bursters (5 Pcs)', price: 750.00, per: "1 Box" },
+  { id: 140, category: "SPECIAL FOUNTAINS", name: 'Multi Colour Shower (5 Pcs)', price: 750.00, per: "1 Box" },
+  { id: 141, category: "SPECIAL FOUNTAINS", name: 'MRF Bat and Ball', price: 1200.00, per: "1 Pce" },
+  { id: 142, category: "SPECIAL FOUNTAINS", name: '90 Watts', price: 550.00, per: "1 Box" },
+  { id: 143, category: "SPECIAL FOUNTAINS", name: 'H2O Falls', price: 650.00, per: "1 Box" },
+  { id: 144, category: "SPECIAL FOUNTAINS", name: 'King Fisher / Henieken / Crystal Tinbeer', price: 375.00, per: "1 Box" },
+  { id: 145, category: "SPECIAL FOUNTAINS", name: 'Old is Gold', price: 800.00, per: "1 Box" },
+  { id: 146, category: "SPECIAL FOUNTAINS", name: 'Mini Rail', price: 250.00, per: "1 Box" },
+  { id: 147, category: "SPECIAL FOUNTAINS", name: 'Photo Flash (5 Pcs)', price: 200.00, per: "1 Box" },
+  { id: 148, category: "SPECIAL FOUNTAINS", name: 'I Cone (2 Pcs)', price: 1000.00, per: "1 Box" },
 
-  // NEW ARRIVAL FOUNTAINS (146-150)
-  { id: 146, category: "NEW ARRIVAL FOUNTAINS", name: 'Rock Stars Fountain', price: 700.00, per: "1 No" },
-  { id: 147, category: "NEW ARRIVAL FOUNTAINS", name: 'Sizzling Star Fountain', price: 950.00, per: "1 Box" },
-  { id: 148, category: "NEW ARRIVAL FOUNTAINS", name: 'Jolly Poppy Fountain', price: 2500.00, per: "1 Box" },
-  { id: 149, category: "NEW ARRIVAL FOUNTAINS", name: 'King Version Grand Fountain', price: 900.00, per: "1 Box" },
-  { id: 150, category: "NEW ARRIVAL FOUNTAINS", name: 'Kulfi Ice Fountain (2 Pcs)', price: 1500.00, per: "1 Box" },
+  // NEW ARRIVAL FOUNTAINS (149-153)
+  { id: 149, category: "NEW ARRIVAL FOUNTAINS", name: 'Rock Stars', price: 700.00, per: "1 No" },
+  { id: 150, category: "NEW ARRIVAL FOUNTAINS", name: 'Sizzling Star', price: 950.00, per: "1 Box" },
+  { id: 151, category: "NEW ARRIVAL FOUNTAINS", name: 'Jolly Poppy', price: 2500.00, per: "1 Box" },
+  { id: 152, category: "NEW ARRIVAL FOUNTAINS", name: 'King Version', price: 900.00, per: "1 Box" },
+  { id: 153, category: "NEW ARRIVAL FOUNTAINS", name: 'Kulfi (2 Pcs)', price: 1500.00, per: "1 Box" },
 
-  // CHILDRENS SPECIAL (151-160)
-  { id: 151, category: "CHILDRENS SPECIAL", name: 'Magic Pops Snappers', price: 35.00, per: "1 Box" },
-  { id: 152, category: "CHILDRENS SPECIAL", name: 'Jee Boom Baa Fun Pops', price: 35.00, per: "1 Box" },
-  { id: 153, category: "CHILDRENS SPECIAL", name: 'Electric Stone Sparklers', price: 40.00, per: "1 Box" },
-  { id: 154, category: "CHILDRENS SPECIAL", name: 'Cartoon Novelty (5 Pcs)', price: 50.00, per: "1 Box" },
-  { id: 155, category: "CHILDRENS SPECIAL", name: 'Kit Kat Sparklers', price: 160.00, per: "1 Box" },
-  { id: 156, category: "CHILDRENS SPECIAL", name: 'Ashrafi Big Fireworks (5 Pcs)', price: 200.00, per: "1 Box" },
-  { id: 157, category: "CHILDRENS SPECIAL", name: 'Super Deluxe Novelty', price: 400.00, per: "1 Box" },
-  { id: 158, category: "CHILDRENS SPECIAL", name: 'Pokemon Queen 10-in-1 Laptop Box', price: 750.00, per: "1 Box" },
-  { id: 159, category: "CHILDRENS SPECIAL", name: 'Roll Caps Strip Gun', price: 450.00, per: "1 Box" },
-  { id: 160, category: "CHILDRENS SPECIAL", name: 'Black Serpent Snakes (1 Dozen)', price: 250.00, per: "1 Box" },
+  // CHILDRENS SPECIAL (154-163)
+  { id: 154, category: "CHILDRENS SPECIAL", name: 'Magic Pops', price: 35.00, per: "1 Box" },
+  { id: 155, category: "CHILDRENS SPECIAL", name: 'Jee Boom Baa', price: 35.00, per: "1 Box" },
+  { id: 156, category: "CHILDRENS SPECIAL", name: 'Electric Stone', price: 40.00, per: "1 Box" },
+  { id: 157, category: "CHILDRENS SPECIAL", name: 'Cartoon (5 Pcs)', price: 50.00, per: "1 Box" },
+  { id: 158, category: "CHILDRENS SPECIAL", name: 'Kit Kat', price: 160.00, per: "1 Box" },
+  { id: 159, category: "CHILDRENS SPECIAL", name: 'Asrafi Big (5 Pcs)', price: 200.00, per: "1 Box" },
+  { id: 160, category: "CHILDRENS SPECIAL", name: 'Super Dulex', price: 400.00, per: "1 Box" },
+  { id: 161, category: "CHILDRENS SPECIAL", name: 'Pokemon Queen 10-in-1 (Laptop)', price: 750.00, per: "1 Box" },
+  { id: 162, category: "CHILDRENS SPECIAL", name: 'Roll Caps', price: 450.00, per: "1 Box" },
+  { id: 163, category: "CHILDRENS SPECIAL", name: 'Black Serpnet (1 Dozen)', price: 250.00, per: "1 Box" },
 
-  // GIFT BOXES (161-164)
-  { id: 161, category: "GIFT BOXES", name: 'Standard Gift Box (20 Items Assortment)', price: 1250.00, per: "1 Box" },
-  { id: 162, category: "GIFT BOXES", name: 'Deluxe Gift Box (30 Items Assortment)', price: 1750.00, per: "1 Box" },
-  { id: 163, category: "GIFT BOXES", name: 'Super Deluxe Gift Box (40 Items Assortment)', price: 2750.00, per: "1 Box" },
-  { id: 164, category: "GIFT BOXES", name: 'VIP Royal Family Box (50 Items Assortment)', price: 3750.00, per: "1 Box" }
+  // GIFT BOXES (164-167)
+  { id: 164, category: "GIFT BOXES", name: '20 Items Gift Box', price: 1250.00, per: "1 Box" },
+  { id: 165, category: "GIFT BOXES", name: '30 Items Gift Box', price: 1750.00, per: "1 Box" },
+  { id: 166, category: "GIFT BOXES", name: '40 Items Gift Box', price: 2750.00, per: "1 Box" },
+  { id: 167, category: "GIFT BOXES", name: '50 Items Gift Box', price: 3750.00, per: "1 Box" }
 ];
 
 // Clean Unique Categories List
