@@ -164,11 +164,17 @@ UPI ID: 6383144854@upi`;
     populatePricelistTable();
   }
 
-  // Get Clean Active Categories (Default + Any Dynamic Categories from Custom Products)
+  // Get Clean Active Categories (Default + Any Dynamic Categories from Custom Products / Categories)
   function getActiveCategories() {
     const defaultCats = (window.CATEGORIES || []).filter(c => c !== "ALL");
-    const dynamicCats = (window.PRODUCTS_DATA || []).map(p => p.category).filter(Boolean);
-    const combined = Array.from(new Set(["ALL", ...defaultCats, ...dynamicCats]));
+    let customCats = [];
+    try {
+      customCats = JSON.parse(localStorage.getItem("FIREWORKS_CATEGORIES_CUSTOM") || "[]");
+    } catch (e) {
+      customCats = [];
+    }
+    const productCats = (window.PRODUCTS_DATA || []).map(p => p.category).filter(Boolean);
+    const combined = Array.from(new Set(["ALL", ...defaultCats, ...customCats, ...productCats]));
     return combined;
   }
 
@@ -1605,6 +1611,10 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
     const adminProductEditId = document.getElementById("admin-product-edit-id");
     const adminInputId = document.getElementById("admin-input-id");
     const adminInputCategory = document.getElementById("admin-input-category");
+    const adminToggleNewCatBtn = document.getElementById("admin-toggle-new-cat-btn");
+    const adminNewCatContainer = document.getElementById("admin-new-cat-container");
+    const adminInputNewCatName = document.getElementById("admin-input-new-cat-name");
+    const adminCancelNewCatBtn = document.getElementById("admin-cancel-new-cat-btn");
     const adminInputName = document.getElementById("admin-input-name");
     const adminInputPer = document.getElementById("admin-input-per");
     const adminInputPrice = document.getElementById("admin-input-price");
@@ -1802,10 +1812,18 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
     function populateAdminCategories() {
       const categories = getActiveCategories().filter(c => c !== "ALL");
       if (adminCatFilter) {
+        const currentVal = adminCatFilter.value;
         adminCatFilter.innerHTML = `<option value="">All Categories</option>` + categories.map(c => `<option value="${c}">${c}</option>`).join("");
+        if (currentVal && categories.includes(currentVal)) {
+          adminCatFilter.value = currentVal;
+        }
       }
       if (adminInputCategory) {
-        adminInputCategory.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
+        const currentSelected = adminInputCategory.value;
+        adminInputCategory.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("") + `<option value="__NEW_CATEGORY__">➕ + Add New Category Section...</option>`;
+        if (currentSelected && (categories.includes(currentSelected) || currentSelected === "__NEW_CATEGORY__")) {
+          adminInputCategory.value = currentSelected;
+        }
       }
     }
 
@@ -1871,7 +1889,10 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
         adminInputId.value = prod.id;
         adminInputId.disabled = true;
       }
+      populateAdminCategories();
       if (adminInputCategory) adminInputCategory.value = prod.category;
+      if (adminNewCatContainer) adminNewCatContainer.classList.add("hidden");
+      if (adminInputNewCatName) adminInputNewCatName.value = "";
       if (adminInputName) adminInputName.value = prod.name;
       if (adminInputPer) adminInputPer.value = prod.per;
       if (adminInputPrice) adminInputPrice.value = prod.price;
@@ -1891,6 +1912,9 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
       if (adminInputName) adminInputName.value = "";
       if (adminInputPer) adminInputPer.value = "1 Box";
       if (adminInputPrice) adminInputPrice.value = "";
+      if (adminInputNewCatName) adminInputNewCatName.value = "";
+      if (adminNewCatContainer) adminNewCatContainer.classList.add("hidden");
+      populateAdminCategories();
       if (adminFormTitle) adminFormTitle.innerHTML = `<span>➕ Add New Cracker Product</span>`;
       if (adminCancelEditBtn) adminCancelEditBtn.classList.add("hidden");
     }
@@ -1899,10 +1923,30 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
       e.preventDefault();
       const editIdStr = adminProductEditId ? adminProductEditId.value : "";
       const codeId = parseInt(adminInputId.value, 10);
-      const category = adminInputCategory.value;
+      let category = adminInputCategory ? adminInputCategory.value : "";
       const name = adminInputName.value.trim();
       const per = adminInputPer.value.trim();
       const price = parseFloat(adminInputPrice.value);
+
+      // Handle New Category Section Input
+      const newCatTyped = adminInputNewCatName ? adminInputNewCatName.value.trim().toUpperCase() : "";
+      if (category === "__NEW_CATEGORY__" || (newCatTyped && !adminNewCatContainer.classList.contains("hidden"))) {
+        if (!newCatTyped) {
+          alert("Please type a name for the new category section (e.g. SKY SHOTS FANCY).");
+          if (adminInputNewCatName) adminInputNewCatName.focus();
+          return;
+        }
+        category = newCatTyped;
+
+        // Persist new category into custom categories list in localStorage
+        try {
+          const customCats = JSON.parse(localStorage.getItem("FIREWORKS_CATEGORIES_CUSTOM") || "[]");
+          if (!customCats.includes(newCatTyped)) {
+            customCats.push(newCatTyped);
+            localStorage.setItem("FIREWORKS_CATEGORIES_CUSTOM", JSON.stringify(customCats));
+          }
+        } catch (e) {}
+      }
 
       if (isNaN(codeId) || !name || !category || isNaN(price)) {
         alert("Please fill all required fields properly.");
@@ -1936,7 +1980,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
       updateGlobalProductCounts();
       updateCartUI();
 
-      alert("✓ Product saved successfully to store catalog!");
+      alert(`✓ Product #${codeId} saved under section "${category}" successfully!`);
       resetAdminForm();
       switchAdminTab("products");
     }
@@ -1958,6 +2002,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
       const defaultLen = (window.FACTORY_DEFAULT_PRODUCTS || []).length || 167;
       if (!confirm(`Reset all cracker prices and products to the original factory default ${defaultLen} items? Any custom added items will be removed.`)) return;
       localStorage.removeItem("FIREWORKS_PRODUCTS_CUSTOM");
+      localStorage.removeItem("FIREWORKS_CATEGORIES_CUSTOM");
       window.PRODUCTS_DATA = [...(window.FACTORY_DEFAULT_PRODUCTS || [])];
 
       renderProducts();
@@ -2094,6 +2139,37 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
     if (adminCatFilter) adminCatFilter.addEventListener("change", renderAdminProducts);
     if (adminResetDefaultsBtn) adminResetDefaultsBtn.addEventListener("click", resetFactoryDefaults);
     if (adminProductForm) adminProductForm.addEventListener("submit", saveAdminProduct);
+
+    // Dynamic Category Section Builder
+    if (adminToggleNewCatBtn) {
+      adminToggleNewCatBtn.addEventListener("click", () => {
+        if (adminNewCatContainer) adminNewCatContainer.classList.remove("hidden");
+        if (adminInputCategory) adminInputCategory.value = "__NEW_CATEGORY__";
+        if (adminInputNewCatName) adminInputNewCatName.focus();
+      });
+    }
+    if (adminCancelNewCatBtn) {
+      adminCancelNewCatBtn.addEventListener("click", () => {
+        if (adminNewCatContainer) adminNewCatContainer.classList.add("hidden");
+        if (adminInputNewCatName) adminInputNewCatName.value = "";
+        if (adminInputCategory) {
+          const firstOpt = adminInputCategory.querySelector("option");
+          if (firstOpt) adminInputCategory.value = firstOpt.value;
+        }
+      });
+    }
+    if (adminInputCategory) {
+      adminInputCategory.addEventListener("change", () => {
+        if (adminInputCategory.value === "__NEW_CATEGORY__") {
+          if (adminNewCatContainer) adminNewCatContainer.classList.remove("hidden");
+          if (adminInputNewCatName) adminInputNewCatName.focus();
+        } else {
+          if (adminNewCatContainer) adminNewCatContainer.classList.add("hidden");
+          if (adminInputNewCatName) adminInputNewCatName.value = "";
+        }
+      });
+    }
+
     if (adminCancelEditBtn) {
       adminCancelEditBtn.addEventListener("click", () => {
         resetAdminForm();
