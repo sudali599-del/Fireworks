@@ -20,9 +20,8 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_SERVER_URL}/products`
-        );
+        const serverUrl = import.meta.env.VITE_SERVER_URL || 'https://fireworks-server.vercel.app';
+        const response = await fetch(`${serverUrl}/products`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

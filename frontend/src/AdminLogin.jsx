@@ -9,9 +9,9 @@ const AdminLogin = ({ onLoginSuccess }) => {
   const [success, setSuccess] = useState('');
 
 
-  const email = import.meta.env.VITE_SENDER_EMAIL;
-  // Replace with your actual API base URL
-  const API_BASE_URL = import.meta.env.VITE_SERVER_URL; // Adjust according to your NestJS server
+  const email = import.meta.env.VITE_SENDER_EMAIL || 'sudali599@gmail.com';
+  // Backend API base URL (NestJS Fireworks-Server)
+  const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'https://fireworks-server.vercel.app';
   
   const handleSendOtp = async () => {
     setLoading(true);

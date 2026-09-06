@@ -148,8 +148,9 @@ const CrackersCartTable = ({
           formData.append("file", pdfBlob, `bill_${phone}_${Date.now()}.pdf`);
           formData.append("email", email);
 
+          const serverUrl = import.meta.env.VITE_SERVER_URL || 'https://fireworks-server.vercel.app';
           const emailResponse = await fetch(
-            `${import.meta.env.VITE_SERVER_URL}/mail/send-pdf`,
+            `${serverUrl}/mail/send-pdf`,
             {
               method: "POST",
               body: formData,
