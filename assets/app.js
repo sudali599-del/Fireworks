@@ -1075,17 +1075,22 @@ UPI ID: 6383144854@upi`;
         `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
       ).join("\n");
 
-      // 2. Prepare FormSubmit data for Shopkeeper
+      // 2. Prepare FormSubmit data with autoresponse for customer & shopkeeper
+      const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
+      const targetCustomerEmail = hasCustEmail ? cust.email.trim() : "sudali599@gmail.com";
+
       const formSubmitData = new FormData();
       formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
       formSubmitData.append("_subject", `New Customer Purchase Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
       formSubmitData.append("_template", "table");
       formSubmitData.append("_captcha", "false");
+      formSubmitData.append("email", targetCustomerEmail);
+      formSubmitData.append("_replyto", targetCustomerEmail);
       formSubmitData.append("Order_Reference", orderNo);
       formSubmitData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
       formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
       formSubmitData.append("Customer_Phone", cust.phone || "-");
-      formSubmitData.append("Customer_Email", cust.email || "Not Provided");
+      formSubmitData.append("Customer_Email", hasCustEmail ? targetCustomerEmail : "Not Provided");
       formSubmitData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
       formSubmitData.append("Total_Varieties", `${summary.totalItems} items`);
       formSubmitData.append("Total_Packages", `${summary.totalQuantity} boxes`);
@@ -1099,30 +1104,45 @@ UPI ID: 6383144854@upi`;
       });
       formSubmitData.append("Full_Receipt_Bill", fullListText);
 
-      // Add CCs & reply-to for customer and secondary shopkeeper
-      const ccList = ["sudali599@gmail.com"];
-      const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
-      if (hasCustEmail) {
-        ccList.push(cust.email.trim());
-        formSubmitData.append("_replyto", cust.email.trim());
+      // Add custom autoresponse message to customer
+      const autoResponseMsg = `Thank you for your order with Selvaganapathy Traders (Sun Flag Fireworks Sivakasi)!
+
+Order Reference: ${orderNo}
+Customer Name: ${cust.name || 'Valued Customer'}
+Phone: ${cust.phone || '-'}
+Delivery Address: ${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}
+Ordered Items: ${summary.totalItems} varieties (${summary.totalQuantity} total packages)
+Grand Total: Rs. ${summary.grandTotal.toFixed(2)}
+
+${fullListText}
+
+Your official estimate PDF is attached to this email. We are packing your order and will contact you for dispatch.
+Helpline: +91 6383144854 / +91 99440 87728
+Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
+      formSubmitData.append("_autoresponse", autoResponseMsg);
+
+      // CC list
+      const ccList = ["selvaganapathytraders@gmail.com"];
+      if (hasCustEmail && !ccList.includes(targetCustomerEmail)) {
+        ccList.push(targetCustomerEmail);
       }
       formSubmitData.append("_cc", ccList.join(","));
 
-      // Send to Selvaganapathy Traders Gmail
-      fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
-        method: "POST",
-        body: formSubmitData
-      }).catch(() => {});
-
-      // Send to Sudali Gmail
+      // Send to Primary Active Endpoint: sudali599@gmail.com (which delivers to sudali, CCs selvaganapathytraders, and autoresponds to customer)
       fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
         method: "POST",
         body: formSubmitData
       }).catch(() => {});
 
-      // 3. If Customer provided an email, dispatch direct receipt copies directly to the customer
+      // Also send to Selvaganapathy Traders Gmail in parallel
+      fetch("https://formsubmit.co/ajax/selvaganapathytraders@gmail.com", {
+        method: "POST",
+        body: formSubmitData
+      }).catch(() => {});
+
+      // 3. If Customer provided an email, also dispatch direct copies to customer
       if (hasCustEmail) {
-        const custEmailTrimmed = cust.email.trim();
+        const custEmailTrimmed = targetCustomerEmail;
 
         // A. FormData with PDF attachment to customer
         const customerFormData = new FormData();
@@ -1130,6 +1150,8 @@ UPI ID: 6383144854@upi`;
         customerFormData.append("_subject", `Your Order Estimate & Receipt [${orderNo}] - Selvaganapathy Traders Sivakasi`);
         customerFormData.append("_template", "table");
         customerFormData.append("_captcha", "false");
+        customerFormData.append("email", custEmailTrimmed);
+        customerFormData.append("_replyto", "selvaganapathytraders@gmail.com");
         customerFormData.append("Order_Reference", orderNo);
         customerFormData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
         customerFormData.append("Customer_Name", cust.name || "Valued Customer");
@@ -1150,23 +1172,6 @@ UPI ID: 6383144854@upi`;
         fetch(`https://formsubmit.co/ajax/${encodeURIComponent(custEmailTrimmed)}`, {
           method: "POST",
           body: customerFormData
-        }).catch(() => {});
-
-        // B. Also JSON fallback to customer
-        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(custEmailTrimmed)}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            _subject: `Order Receipt Confirmation [${orderNo}] - Selvaganapathy Traders`,
-            _template: "table",
-            _captcha: "false",
-            Order_Reference: orderNo,
-            Customer_Name: cust.name || "Valued Customer",
-            Total_Items: `${summary.totalItems} varieties (${summary.totalQuantity} boxes)`,
-            Grand_Total: `₹ ${summary.grandTotal.toFixed(2)}`,
-            Receipt_Summary: fullListText,
-            Store_Contact: "Selvaganapathy Traders, Sivakasi | +91 6383144854 / +91 99440 87728"
-          })
         }).catch(() => {});
       }
     };
