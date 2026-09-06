@@ -834,19 +834,6 @@ UPI ID: 6383144854@upi`;
     window.open(gmailUrl, "_blank");
   }
 
-  // Open Gmail to Customer's Email (with CC to Shopkeeper)
-  function openCustomerGmailOrder() {
-    const cust = state.customer;
-    const summary = getCartSummary();
-    const orderNo = getOrGenerateOrderNo();
-    const subject = encodeURIComponent(`Diwali 2026 Order Estimate & Receipt #${orderNo} - Selvaganapathy Traders Sivakasi`);
-    const body = encodeURIComponent(buildOrderPlainText());
-    const targetEmail = cust.email && cust.email.trim() ? encodeURIComponent(cust.email.trim()) : "";
-    const ccParam = encodeURIComponent("selvaganapathytraders@gmail.com,sudali599@gmail.com");
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${targetEmail}&cc=${ccParam}&su=${subject}&body=${body}`;
-    window.open(gmailUrl, "_blank");
-  }
-
   // Generate WhatsApp Order Message (English)
   function buildWhatsAppMessage(phoneTarget) {
     const summary = getCartSummary();
@@ -1073,22 +1060,17 @@ UPI ID: 6383144854@upi`;
         `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
       ).join("\n");
 
-      // 2. Prepare FormSubmit data with autoresponse for customer & shopkeeper
-      const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
-      const targetCustomerEmail = hasCustEmail ? cust.email.trim() : "sudali599@gmail.com";
-
+      // 2. Prepare FormSubmit data for Shopkeeper Dispatch
       const formSubmitData = new FormData();
       formSubmitData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
       formSubmitData.append("_subject", `New Customer Purchase Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`);
       formSubmitData.append("_template", "table");
       formSubmitData.append("_captcha", "false");
-      formSubmitData.append("email", targetCustomerEmail);
-      formSubmitData.append("_replyto", targetCustomerEmail);
       formSubmitData.append("Order_Reference", orderNo);
       formSubmitData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
       formSubmitData.append("Customer_Name", cust.name || "Valued Customer");
       formSubmitData.append("Customer_Phone", cust.phone || "-");
-      formSubmitData.append("Customer_Email", hasCustEmail ? targetCustomerEmail : "Not Provided");
+      formSubmitData.append("Customer_Email", (cust.email && cust.email.trim()) ? cust.email.trim() : "Not Provided");
       formSubmitData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
       formSubmitData.append("Total_Varieties", `${summary.totalItems} items`);
       formSubmitData.append("Total_Packages", `${summary.totalQuantity} boxes`);
@@ -1102,31 +1084,7 @@ UPI ID: 6383144854@upi`;
       });
       formSubmitData.append("Full_Receipt_Bill", fullListText);
 
-      // Add custom autoresponse message to customer
-      const autoResponseMsg = `Thank you for your order with Selvaganapathy Traders (Sun Flag Fireworks Sivakasi)!
-
-Order Reference: ${orderNo}
-Customer Name: ${cust.name || 'Valued Customer'}
-Phone: ${cust.phone || '-'}
-Delivery Address: ${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}
-Ordered Items: ${summary.totalItems} varieties (${summary.totalQuantity} total packages)
-Grand Total: Rs. ${summary.grandTotal.toFixed(2)}
-
-${fullListText}
-
-Your official estimate PDF is attached to this email. We are packing your order and will contact you for dispatch.
-Helpline: +91 6383144854 / +91 99440 87728
-Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
-      formSubmitData.append("_autoresponse", autoResponseMsg);
-
-      // CC list
-      const ccList = ["selvaganapathytraders@gmail.com"];
-      if (hasCustEmail && !ccList.includes(targetCustomerEmail)) {
-        ccList.push(targetCustomerEmail);
-      }
-      formSubmitData.append("_cc", ccList.join(","));
-
-      // Send to Primary Active Endpoint: sudali599@gmail.com (which delivers to sudali, CCs selvaganapathytraders, and autoresponds to customer)
+      // Send to Primary Shopkeeper Endpoint: sudali599@gmail.com
       fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
         method: "POST",
         body: formSubmitData
@@ -1137,119 +1095,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu`;
         method: "POST",
         body: formSubmitData
       }).catch(() => {});
-
-      // 3. If Customer provided an email, also dispatch direct copies to customer
-      if (hasCustEmail) {
-        const custEmailTrimmed = targetCustomerEmail;
-
-        // A. FormData with PDF attachment to customer
-        const customerFormData = new FormData();
-        customerFormData.append("attachment", pdfBlob, `Estimate_${orderNo}.pdf`);
-        customerFormData.append("_subject", `Your Order Estimate & Receipt [${orderNo}] - Selvaganapathy Traders Sivakasi`);
-        customerFormData.append("_template", "table");
-        customerFormData.append("_captcha", "false");
-        customerFormData.append("email", custEmailTrimmed);
-        customerFormData.append("_replyto", "selvaganapathytraders@gmail.com");
-        customerFormData.append("Order_Reference", orderNo);
-        customerFormData.append("Order_Date", new Date().toLocaleDateString("en-IN"));
-        customerFormData.append("Customer_Name", cust.name || "Valued Customer");
-        customerFormData.append("Customer_Phone", cust.phone || "-");
-        customerFormData.append("Customer_Email", custEmailTrimmed);
-        customerFormData.append("Delivery_Address", `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`);
-        customerFormData.append("Total_Varieties", `${summary.totalItems} items`);
-        customerFormData.append("Total_Packages", `${summary.totalQuantity} boxes`);
-        customerFormData.append("Grand_Total_INR", `₹ ${summary.grandTotal.toFixed(2)}`);
-        customerFormData.append("Full_Receipt_Bill", fullListText);
-
-        summary.cartItems.forEach((item, index) => {
-          const itemNum = String(index + 1).padStart(2, '0');
-          const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-          customerFormData.append(`Item_${itemNum}_${cleanName}`, `Code #${item.id} | ${item.name} (${item.category}) | ${item.per} | Rate: ₹${item.price.toFixed(2)} | Qty: ${item.qty} | Subtotal: ₹${item.itemTotal.toFixed(2)}`);
-        });
-
-        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(custEmailTrimmed)}`, {
-          method: "POST",
-          body: customerFormData
-        }).catch(() => {});
-      }
     };
-  }
-
-  // Native Hidden Form Post to FormSubmit for Reliable Delivery & Autoresponder
-  function submitNativeFormToFormSubmit(orderNo, cust, summary) {
-    let iframe = document.getElementById("formsubmit-hidden-iframe");
-    if (!iframe) {
-      iframe = document.createElement("iframe");
-      iframe.id = "formsubmit-hidden-iframe";
-      iframe.name = "formsubmit-hidden-iframe";
-      iframe.style.display = "none";
-      document.body.appendChild(iframe);
-    }
-
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "https://formsubmit.co/sudali599@gmail.com";
-    form.target = "formsubmit-hidden-iframe";
-    form.style.display = "none";
-
-    const hasCustEmail = cust.email && cust.email.trim() && cust.email.includes("@");
-    const targetEmail = hasCustEmail ? cust.email.trim() : "sudali599@gmail.com";
-
-    const fullListText = summary.cartItems.map((item, idx) => 
-      `${idx + 1}. [Code #${item.id}] ${item.name} (${item.category}) - ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`
-    ).join("\n");
-
-    const fields = {
-      "_subject": `New Customer Purchase Receipt [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`,
-      "_template": "table",
-      "_captcha": "false",
-      "email": targetEmail,
-      "_replyto": targetEmail,
-      "_cc": "selvaganapathytraders@gmail.com",
-      "Order_Reference": orderNo,
-      "Order_Date": new Date().toLocaleDateString("en-IN"),
-      "Customer_Name": cust.name || "Valued Customer",
-      "Customer_Phone": cust.phone || "-",
-      "Customer_Email": hasCustEmail ? targetEmail : "Not Provided",
-      "Delivery_Address": `${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}`,
-      "Total_Varieties": `${summary.totalItems} items`,
-      "Total_Packages": `${summary.totalQuantity} boxes`,
-      "Grand_Total_INR": `₹ ${summary.grandTotal.toFixed(2)}`,
-      "Ordered_Items_List": fullListText,
-      "_autoresponse": `Thank you for your order with Selvaganapathy Traders (Sun Flag Fireworks Sivakasi)!
-
-Order Reference: ${orderNo}
-Customer Name: ${cust.name || 'Valued Customer'}
-Phone: ${cust.phone || '-'}
-Delivery Address: ${cust.address || ''}, ${cust.city || ''} ${cust.pincode ? '- ' + cust.pincode : ''}
-Ordered Items: ${summary.totalItems} varieties (${summary.totalQuantity} total packages)
-Grand Total: Rs. ${summary.grandTotal.toFixed(2)}
-
-${fullListText}
-
-We have registered your order and will contact you for factory dispatch.
-Helpline: +91 6383144854 / +91 99440 87728`
-    };
-
-    summary.cartItems.forEach((item, index) => {
-      const itemNum = String(index + 1).padStart(2, '0');
-      const cleanName = item.name.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 20);
-      fields[`Item_${itemNum}_${cleanName}`] = `#${item.id} | ${item.name} | ${item.qty} ${item.per} x ₹${item.price.toFixed(2)} = ₹${item.itemTotal.toFixed(2)}`;
-    });
-
-    for (const [key, value] of Object.entries(fields)) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = value;
-      form.appendChild(input);
-    }
-
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(() => {
-      if (form.parentNode) form.parentNode.removeChild(form);
-    }, 2000);
   }
 
   // Fallback Print
@@ -1442,8 +1288,8 @@ Helpline: +91 6383144854 / +91 99440 87728`
           // 1. Automatically generate/download PDF and send PDF copy to shopkeeper
           downloadAndSendPdf(summary, cust, orderNo);
 
-          // 2. Automated background FormSubmit form submission with autoresponder
-          submitNativeFormToFormSubmit(orderNo, cust, summary);
+          // 2. Automated background dispatch to server & shopkeeper email
+          dispatchOrderToBackend(summary, cust, orderNo);
 
           // 3. Record order in local admin log
           recordOrderInAdminLog(summary, cust, orderNo);
@@ -1478,7 +1324,7 @@ Helpline: +91 6383144854 / +91 99440 87728`
       }, 1000);
     }
 
-    // Automatic Background Dispatch to Backend API & FormSubmit
+    // Automatic Background Dispatch to Backend API & Shopkeeper Email
     async function dispatchOrderToBackend(summary, cust, orderNo) {
       const emailContent = {
         _subject: `New Diwali 2026 Purchase [${orderNo}] - ₹${summary.grandTotal.toFixed(2)} - ${cust.name || 'Customer'}`,
@@ -1511,16 +1357,7 @@ Helpline: +91 6383144854 / +91 99440 87728`
         body: JSON.stringify(emailContent)
       }).catch(e => console.warn("Backup email dispatch:", e));
 
-      // 3. Direct FormSubmit to Customer Email if provided
-      if (cust.email && cust.email.includes("@")) {
-        fetch(`https://formsubmit.co/ajax/${cust.email.trim()}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(emailContent)
-        }).catch(() => {});
-      }
-
-      // 4. REST API Server endpoint (Fireworks-Server)
+      // 3. REST API Server endpoint (Fireworks-Server)
       const payload = {
         orderNo,
         date: new Date().toLocaleDateString("en-IN"),
@@ -1564,7 +1401,6 @@ Helpline: +91 6383144854 / +91 99440 87728`
     // Wire up Order Success Modal Action Buttons
     const closeSuccessBtn = document.getElementById("close-order-success-btn");
     const downloadPdfBtn = document.getElementById("order-success-download-pdf-btn");
-    const emailReceiptBtn = document.getElementById("order-success-email-receipt-btn");
     const successCopyBtn = document.getElementById("order-success-copy-text-btn");
     const newOrderBtn = document.getElementById("order-success-new-order-btn");
 
@@ -1578,12 +1414,6 @@ Helpline: +91 6383144854 / +91 99440 87728`
       downloadPdfBtn.addEventListener("click", () => {
         downloadAndSendPdf(getCartSummary(), state.customer, getOrGenerateOrderNo());
         startAutoRedirectCountdown();
-      });
-    }
-    if (emailReceiptBtn) {
-      emailReceiptBtn.addEventListener("click", () => {
-        if (redirectTimer) clearInterval(redirectTimer);
-        openCustomerGmailOrder();
       });
     }
     if (successCopyBtn) successCopyBtn.addEventListener("click", () => copyOrderToClipboard(successCopyBtn));
