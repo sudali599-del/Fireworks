@@ -20,12 +20,12 @@ export default function FireworksBackground() {
 
     // Particle Colors
     const colorPalettes = [
-      ['#ff0055', '#ff5500', '#ffcc00', '#ffffff'], // Flame Red & Gold
-      ['#00f0ff', '#7000ff', '#ff00d4', '#ffffff'], // Neon Cyber
-      ['#00ff66', '#00e5ff', '#ffff00', '#ffffff'], // Emerald Sparkle
-      ['#ffd700', '#ffaa00', '#ff3300', '#ffe680'], // Pure Diwali Gold
-      ['#ff3399', '#9933ff', '#33ccff', '#ffffff'], // Festive Rainbow
-      ['#ff1744', '#f50057', '#d500f9', '#ffffff'], // Royal Ruby
+      ['#ff0055', '#ff5500', '#ffcc00', '#ffffff'],
+      ['#00f0ff', '#7000ff', '#ff00d4', '#ffffff'],
+      ['#00ff66', '#00e5ff', '#ffff00', '#ffffff'],
+      ['#ffd700', '#ffaa00', '#ff3300', '#ffe680'],
+      ['#ff3399', '#9933ff', '#33ccff', '#ffffff'],
+      ['#ff1744', '#f50057', '#d500f9', '#ffffff'],
     ];
 
     const fireworks = [];
@@ -36,8 +36,8 @@ export default function FireworksBackground() {
         this.x = width * 0.15 + Math.random() * (width * 0.7);
         this.y = height + 10;
         this.targetX = targetX !== undefined ? targetX : width * 0.1 + Math.random() * (width * 0.8);
-        this.targetY = targetY !== undefined ? targetY : height * 0.08 + Math.random() * (height * 0.45);
-        this.speed = 10 + Math.random() * 6;
+        this.targetY = targetY !== undefined ? targetY : height * 0.06 + Math.random() * (height * 0.4);
+        this.speed = 10 + Math.random() * 5;
         this.angle = Math.atan2(this.targetY - this.y, this.targetX - this.x);
         this.vx = Math.cos(this.angle) * this.speed;
         this.vy = Math.sin(this.angle) * this.speed;
@@ -45,7 +45,7 @@ export default function FireworksBackground() {
         this.trail = [];
         this.trailLength = 8;
         this.exploded = false;
-        this.size = 3 + Math.random() * 2;
+        this.size = 3.5;
       }
 
       update() {
@@ -56,7 +56,6 @@ export default function FireworksBackground() {
         this.x += this.vx;
         this.y += this.vy;
 
-        // Check if reached apex / target
         if (this.vy < 0 && this.y <= this.targetY) {
           this.explode();
         }
@@ -64,17 +63,10 @@ export default function FireworksBackground() {
 
       explode() {
         this.exploded = true;
-        const particleCount = 70 + Math.floor(Math.random() * 60); // Large explosion
+        const particleCount = 75 + Math.floor(Math.random() * 60);
 
         for (let i = 0; i < particleCount; i++) {
           particles.push(new Particle(this.x, this.y, this.palette));
-        }
-
-        // Secondary shockwave ring
-        if (Math.random() > 0.4) {
-          for (let i = 0; i < 24; i++) {
-            particles.push(new ShockwaveSpark(this.x, this.y, this.palette[0]));
-          }
         }
       }
 
@@ -142,52 +134,18 @@ export default function FireworksBackground() {
       }
     }
 
-    class ShockwaveSpark {
-      constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 7 + Math.random() * 5;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.alpha = 1;
-        this.decay = 0.025;
-        this.size = 2;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vx *= 0.92;
-        this.vy *= 0.92;
-        this.alpha -= this.decay;
-      }
-      draw() {
-        if (this.alpha <= 0) return;
-        ctx.save();
-        ctx.globalAlpha = this.alpha;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.shadowColor = '#ffffff';
-        ctx.shadowBlur = 14;
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
     let lastLaunch = 0;
 
     const animate = (timestamp) => {
-      ctx.fillStyle = 'rgba(15, 10, 35, 0.22)';
-      ctx.fillRect(0, 0, width, height);
+      // Clear canvas fully each frame for 100% transparency over content
+      ctx.clearRect(0, 0, width, height);
 
-      if (timestamp - lastLaunch > 800 + Math.random() * 700) {
+      if (timestamp - lastLaunch > 750 + Math.random() * 650) {
         fireworks.push(new Rocket());
-        if (Math.random() > 0.5) {
+        if (Math.random() > 0.4) {
           setTimeout(() => {
             fireworks.push(new Rocket());
-          }, 250);
+          }, 200);
         }
         lastLaunch = timestamp;
       }
@@ -225,7 +183,7 @@ export default function FireworksBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0 w-full h-full"
-      style={{ opacity: 0.85 }}
+      style={{ opacity: 0.9, pointerEvents: 'none' }}
     />
   );
 }

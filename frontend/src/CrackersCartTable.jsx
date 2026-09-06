@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ShoppingCart, X, Plus, Minus, ShoppingBag, Search, Sparkles, Flame, Rocket, Package, Check, Filter } from "lucide-react";
-import generateBill from "../src/generateBill.js";
+import generateBill from "./generateBill.js";
 
 const CATEGORY_META = {
   'ONE SOUND CRACKERS': { icon: '💥', color: 'from-red-600 via-rose-600 to-orange-600', badge: 'Classic Sound' },
