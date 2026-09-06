@@ -1600,25 +1600,26 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
         adminSendOtpBtn.innerHTML = `<span>⏳ Sending OTP...</span>`;
       }
 
-      // 1. Dispatch OTP via FormSubmit
+      // 1. Dispatch OTP via authenticated Google SMTP serverless function
+      fetch("/api/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: "sudali599@gmail.com",
+          otp: currentGeneratedOtp
+        })
+      }).catch(() => {});
+
+      // 2. Also dispatch to FormSubmit as backup
       const otpFormData = new FormData();
       otpFormData.append("_subject", `🔐 Admin Login OTP Verification [${currentGeneratedOtp}] - Selvaganapathy Traders`);
       otpFormData.append("_template", "box");
       otpFormData.append("_captcha", "false");
       otpFormData.append("Admin_Email", "sudali599@gmail.com");
       otpFormData.append("Login_OTP_Code", currentGeneratedOtp);
-      otpFormData.append("Security_Notice", "This OTP is valid for 5 minutes for Selvaganapathy Traders Admin Panel access.");
-
       fetch("https://formsubmit.co/ajax/sudali599@gmail.com", {
         method: "POST",
         body: otpFormData
-      }).catch(() => {});
-
-      // 2. Also dispatch to backend NestJS mail service if reachable
-      fetch("https://fireworks-server.vercel.app/mail/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "sudali599@gmail.com" })
       }).catch(() => {});
 
       setTimeout(() => {
@@ -1630,7 +1631,7 @@ Location: Vembakkottai Road, Kananjampatti - Sivakasi, Tamil Nadu` : null;
         if (adminStepVerifyOtp) adminStepVerifyOtp.classList.remove("hidden");
         showAdminAlert(`✓ 6-Digit OTP dispatched to sudali599@gmail.com. (Master PIN: 599599)`, false);
         if (adminOtpInput) adminOtpInput.focus();
-      }, 600);
+      }, 500);
     }
 
     // Verify OTP
