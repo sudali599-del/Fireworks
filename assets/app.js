@@ -1035,66 +1035,191 @@ UPI ID: 6383144854@upi`;
     `;
   }
 
-  // Real PDF Generator with Location Picker Dialog (Protected against double triggers)
+  // Real Vector PDF Generator using jsPDF + AutoTable (Never blank, 100% reliable)
   let isGeneratingPdf = false;
   let lastCompletedOrder = null;
 
-  async function downloadAndSendPdf(summary, cust, orderNo) {
-    if (isGeneratingPdf) return;
-    isGeneratingPdf = true;
+  function createVectorJsPdfDoc(summary, cust, orderNo) {
+    const jsPdfLib = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+    if (!jsPdfLib) return null;
 
-    // Use passed data or fall back to lastCompletedOrder or current cart
-    const activeSummary = (summary && summary.cartItems && summary.cartItems.length > 0)
-      ? summary
-      : (lastCompletedOrder?.summary || getCartSummary());
+    const doc = new jsPdfLib({
+      orientation: 'p',
+      unit: 'mm',
+      format: 'a4'
+    });
 
-    const activeCust = (cust && (cust.name || cust.phone))
-      ? cust
-      : (lastCompletedOrder?.cust || state.customer || {});
-
-    const activeOrderNo = orderNo || lastCompletedOrder?.orderNo || getOrGenerateOrderNo();
-
-    const dateStr = new Date().toLocaleDateString("en-US", {
+    const dateStr = new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric"
     });
 
-    const container = document.createElement("div");
-    container.id = "pdf-render-container";
-    container.innerHTML = buildEstimateHtml(activeSummary, activeCust, activeOrderNo, dateStr);
-    container.style.position = "absolute";
-    container.style.left = "0";
-    container.style.top = "0";
-    container.style.width = "794px";
-    container.style.background = "#ffffff";
-    container.style.color = "#000000";
-    container.style.zIndex = "99999999";
-    container.style.boxSizing = "border-box";
-    document.body.appendChild(container);
+    const safeSummary = summary || { totalItems: 0, totalQuantity: 0, grandTotal: 0, cartItems: [] };
+    const safeCust = cust || {};
+    const items = safeSummary.cartItems || [];
 
-    if (window.html2pdf) {
-      const opt = {
-        margin: [6, 6, 6, 6],
-        filename: `Estimate_${activeOrderNo}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true,
-          scrollY: 0,
-          scrollX: 0,
-          windowWidth: 800,
-          backgroundColor: '#ffffff'
+    // 1. Header Banner
+    doc.setFillColor(15, 23, 42); // Navy #0f172a
+    doc.rect(0, 0, 210, 26, 'F');
+
+    // Title
+    doc.setTextColor(253, 224, 71); // Gold #fde047
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.text("SELVAGANAPATHY TRADERS", 14, 10);
+
+    doc.setTextColor(251, 207, 232); // Pink #fbcfe8
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text("SUN FLAG FIREWORKS & SPARKLERS  •  SIVAKASI", 14, 15);
+
+    doc.setTextColor(226, 232, 240);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text("Vembakkottai Road, Kananjampatti, Sivakasi, Tamil Nadu | Helpline: +91 6383144854 / +91 99440 87728", 14, 20);
+
+    // Right Side: Order Badge
+    doc.setFillColor(217, 119, 6); // Amber #d97706
+    doc.roundedRect(144, 4, 52, 18, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text("OFFICIAL ESTIMATE", 170, 9, { align: "center" });
+    doc.setFontSize(7);
+    doc.text(`Ref: ${orderNo}`, 170, 14, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text(`Date: ${dateStr}`, 170, 19, { align: "center" });
+
+    // 2. Customer & Order Info Box
+    doc.setFillColor(248, 250, 252); // Slate #f8fafc
+    doc.setDrawColor(203, 213, 225); // Slate #cbd5e1
+    doc.roundedRect(14, 29, 182, 22, 2, 2, 'FD');
+
+    // Left column: Customer
+    doc.setTextColor(15, 23, 42);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.text("CUSTOMER DETAILS:", 17, 34);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text(`Name: ${safeCust.name || 'Valued Customer'}    |    Phone: ${safeCust.phone || '-'}`, 17, 39);
+    doc.text(`Address: ${(safeCust.address || '-') + (safeCust.city ? ', ' + safeCust.city : '') + (safeCust.pincode ? ' - ' + safeCust.pincode : '')}`, 17, 44);
+    if (safeCust.email) {
+      doc.text(`Email: ${safeCust.email}`, 17, 48);
+    }
+
+    // Right column: Summary
+    doc.setFont("helvetica", "bold");
+    doc.text("ORDER SUMMARY:", 125, 34);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Product Varieties: ${safeSummary.totalItems || items.length}`, 125, 39);
+    doc.text(`Total Packages: ${safeSummary.totalQuantity || 0} boxes`, 125, 44);
+    doc.setTextColor(5, 150, 105);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Booking Status: Confirmed & Dispatched`, 125, 48);
+
+    // 3. Table Rows using AutoTable
+    const tableBody = items.map((item, idx) => [
+      String(item.id || (idx + 1)),
+      item.name,
+      item.category || '',
+      item.per || '1 Pkt',
+      `Rs. ${Number(item.price || 0).toFixed(2)}`,
+      String(item.qty),
+      `Rs. ${Number(item.itemTotal || (item.qty * item.price) || 0).toFixed(2)}`
+    ]);
+
+    if (typeof doc.autoTable === "function") {
+      doc.autoTable({
+        startY: 54,
+        head: [['#ID', 'Product Description', 'Category', 'Unit', 'Rate', 'Qty', 'Amount']],
+        body: tableBody,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 7.5,
+          halign: 'center'
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+          1: { halign: 'left', cellWidth: 62 },
+          2: { halign: 'left', cellWidth: 40 },
+          3: { halign: 'center', cellWidth: 18 },
+          4: { halign: 'right', cellWidth: 20 },
+          5: { halign: 'center', cellWidth: 12 },
+          6: { halign: 'right', cellWidth: 22 }
+        },
+        styles: {
+          fontSize: 7,
+          cellPadding: 1.8,
+          textColor: [30, 41, 59]
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        margin: { left: 14, right: 14 }
+      });
+    }
 
-      try {
-        // Generate PDF Blob using html2pdf's worker output
-        const pdfBlob = await html2pdf().set(opt).from(container).output('blob');
+    const finalY = doc.lastAutoTable ? (doc.lastAutoTable.finalY + 3) : 180;
+    
+    // Grand Total Box
+    doc.setFillColor(15, 23, 42);
+    doc.roundedRect(125, finalY, 71, 13, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.text("NET GRAND TOTAL:", 129, finalY + 8);
+    doc.setTextColor(74, 222, 128); // Green
+    doc.setFontSize(10.5);
+    doc.text(`Rs. ${Number(safeSummary.grandTotal || 0).toFixed(2)}`, 192, finalY + 8, { align: "right" });
 
-        // 1. Try File System Access API (showSaveFilePicker)
-        let savedWithLocationPicker = false;
+    // Terms Box
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(14, finalY, 105, 13, 2, 2, 'FD');
+    doc.setTextColor(71, 85, 105);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.text("• Orders safely packed in Sivakasi factory standard industrial cartons.", 17, finalY + 5);
+    doc.text("• Road parcel transport dispatches routed to your destination city.", 17, finalY + 9);
+
+    // Signatory
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(6.5);
+    doc.text("Selvaganapathy Traders • Sivakasi | Authorized Commercial Estimate", 14, finalY + 18);
+
+    return doc;
+  }
+
+  async function downloadAndSendPdf(summary, cust, orderNo) {
+    if (isGeneratingPdf) return;
+    isGeneratingPdf = true;
+
+    try {
+      // Use passed data or fall back to lastCompletedOrder or current cart
+      const activeSummary = (summary && summary.cartItems && summary.cartItems.length > 0)
+        ? summary
+        : (lastCompletedOrder?.summary || getCartSummary());
+
+      const activeCust = (cust && (cust.name || cust.phone))
+        ? cust
+        : (lastCompletedOrder?.cust || state.customer || {});
+
+      const activeOrderNo = orderNo || lastCompletedOrder?.orderNo || getOrGenerateOrderNo();
+
+      // 1. Try Native jsPDF Vector Document Generator
+      const doc = createVectorJsPdfDoc(activeSummary, activeCust, activeOrderNo);
+      if (doc) {
+        const pdfBlob = doc.output('blob');
+
+        // Location Picker Dialog
+        let savedWithPicker = false;
         if (typeof window.showSaveFilePicker === "function") {
           try {
             const handle = await window.showSaveFilePicker({
@@ -1107,27 +1232,24 @@ UPI ID: 6383144854@upi`;
             const writable = await handle.createWritable();
             await writable.write(pdfBlob);
             await writable.close();
-            savedWithLocationPicker = true;
+            savedWithPicker = true;
           } catch (pickerErr) {
-            // User dismissed or cancelled the file dialog intentionally
-            savedWithLocationPicker = true;
+            savedWithPicker = true; // User intentionally dismissed
           }
         }
 
-        // Fallback for browsers without File System Access API
-        if (!savedWithLocationPicker) {
-          await html2pdf().set(opt).from(container).save();
+        if (!savedWithPicker) {
+          doc.save(`Estimate_${activeOrderNo}.pdf`);
         }
-      } catch (err) {
-        console.warn("html2pdf generation error, using popup fallback:", err);
-        printOrderEstimate();
-      } finally {
-        if (container.parentNode) container.parentNode.removeChild(container);
-        isGeneratingPdf = false;
+        return;
       }
-    } else {
+
+      // 2. Fallback to Print Preview if jsPDF unavailable
       printOrderEstimate();
-      if (container.parentNode) container.parentNode.removeChild(container);
+    } catch (err) {
+      console.warn("PDF generation error, opening print preview:", err);
+      printOrderEstimate();
+    } finally {
       isGeneratingPdf = false;
     }
   }
