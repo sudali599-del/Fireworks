@@ -80,7 +80,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
   };
 
   // Auto-hide success/error messages
-  useState(() => {
+  useEffect(() => {
     if (success || error) {
       const timer = setTimeout(() => {
         setSuccess('');

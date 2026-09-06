@@ -7,14 +7,15 @@ export default function FireworksBackground() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     let animationFrameId;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = (canvas.width = window.innerWidth || document.documentElement.clientWidth || 1024);
+    let height = (canvas.height = window.innerHeight || document.documentElement.clientHeight || 768);
 
     const handleResize = () => {
       if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      width = canvas.width = window.innerWidth || document.documentElement.clientWidth || 1024;
+      height = canvas.height = window.innerHeight || document.documentElement.clientHeight || 768;
     };
     window.addEventListener('resize', handleResize);
 
