@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "@vercel/node": "^5.3.11",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "mongoose": "^8.9.5",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.16"
+    "cors": "^2.8.6",
+    "express": "^4.22.2",
+    "mongoose": "^8.24.4",
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^6.10.1"
   }
 }

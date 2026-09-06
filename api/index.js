@@ -499,3 +499,10 @@ app.post(['/mail/verify-otp', '/api/mail/verify-otp'], async (req, res) => {
 });
 
 module.exports = app;
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Backend API Server running at http://localhost:${PORT}`);
+  });
+}
