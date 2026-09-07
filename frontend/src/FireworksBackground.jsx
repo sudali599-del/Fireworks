@@ -196,8 +196,7 @@ export default function FireworksBackground() {
     let lastLaunch = 0;
 
     const animate = (timestamp) => {
-      ctx.fillStyle = 'rgba(6, 2, 18, 0.22)';
-      ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
       if (timestamp - lastLaunch > 750 + Math.random() * 650) {
         fireworks.push(new Rocket());
