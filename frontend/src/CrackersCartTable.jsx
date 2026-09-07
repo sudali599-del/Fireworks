@@ -53,12 +53,13 @@ const CrackersCartTable = ({
   const [viewMode, setViewMode] = useState("cards"); // 'cards' or 'compact'
 
   const groupByCategory = (productsList) => {
-    const grouped = productsList.reduce((acc, product) => {
+    const grouped = (productsList || []).reduce((acc, product) => {
       const category = product.productType || "Uncategorized";
       if (!acc[category]) {
         acc[category] = [];
       }
       acc[category].push(product);
+      return acc;
     }, {});
 
     const orderedGrouped = {};
