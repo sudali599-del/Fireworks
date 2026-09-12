@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Filter, X, Save, XCircle, Package, LogOut, User, ChevronDown } from 'lucide-react';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
+const STORAGE_KEY = 'fireworks_categories_data';
+
 const DEFAULT_CATEGORIES = [
   'ONE SOUND CRACKERS',
   'FLOWER POTS',
@@ -28,9 +30,109 @@ const DEFAULT_CATEGORIES = [
   'GIFT BOXES'
 ].map((name, index) => ({ name, sequence: index + 1 }));
 
+const getStoredCategories = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return [...parsed].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+      }
+    }
+  } catch (e) {
+    console.error('Failed to read categories from storage:', e);
+  }
+  // Initialize storage with defaults if not present
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_CATEGORIES));
+  } catch (e) {}
+  return DEFAULT_CATEGORIES;
+};
+
+const persistCategories = (cats) => {
+  try {
+    const sorted = [...cats].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
+    window.dispatchEvent(new Event('categoriesUpdated'));
+  } catch (e) {
+    console.error('Failed to save categories to storage:', e);
+  }
+};
+
+// Shift and reorder category array when a sequence is changed
+// e.g. 5 to 3: 3 shifts to 4, 4 shifts to 5, edited category becomes 3
+// e.g. 3 to 5: 4 shifts to 3, 5 shifts to 4, edited category becomes 5
+const reorderCategoryList = (currentCategories, targetIdentifier, oldSeq, newSeq, newName) => {
+  const target = currentCategories.find(
+    (c) =>
+      (targetIdentifier.id && c._id === targetIdentifier.id) ||
+      (targetIdentifier.originalName && c.name === targetIdentifier.originalName) ||
+      c.name === targetIdentifier.name
+  );
+  if (!target) return currentCategories;
+
+  const actualOldSeq = Number.isInteger(oldSeq) && oldSeq > 0 ? oldSeq : (target.sequence ?? 1);
+
+  if (actualOldSeq === newSeq && target.name === newName) {
+    return currentCategories;
+  }
+
+  const others = currentCategories.filter((c) => c !== target);
+
+  const updatedOthers = others.map((cat) => {
+    let catSeq = cat.sequence ?? 1;
+    if (newSeq < actualOldSeq) {
+      // e.g. 5 to 3: categories with sequence in [3, 4] shift UP by +1 (3 becomes 4, 4 becomes 5)
+      if (catSeq >= newSeq && catSeq < actualOldSeq) {
+        catSeq += 1;
+      }
+    } else if (newSeq > actualOldSeq) {
+      // e.g. 3 to 5: categories with sequence in [4, 5] shift DOWN by -1 (4 becomes 3, 5 becomes 4)
+      if (catSeq > actualOldSeq && catSeq <= newSeq) {
+        catSeq -= 1;
+      }
+    }
+    return { ...cat, sequence: catSeq };
+  });
+
+  const targetUpdated = { ...target, name: newName, sequence: newSeq };
+  const combined = [...updatedOthers, targetUpdated];
+  combined.sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+
+  // Normalize sequences strictly 1..N
+  return combined.map((cat, idx) => ({
+    ...cat,
+    sequence: idx + 1,
+  }));
+};
+
+const insertCategoryAtSequence = (currentCategories, newName, targetSeq) => {
+  const shifted = currentCategories.map((cat) => {
+    if (cat.sequence >= targetSeq) {
+      return { ...cat, sequence: cat.sequence + 1 };
+    }
+    return cat;
+  });
+  const combined = [...shifted, { name: newName, sequence: targetSeq }];
+  combined.sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+  return combined.map((cat, idx) => ({
+    ...cat,
+    sequence: idx + 1,
+  }));
+};
+
+const removeCategoryAndNormalize = (currentCategories, targetName) => {
+  const remaining = currentCategories.filter((c) => c.name !== targetName);
+  remaining.sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+  return remaining.map((cat, idx) => ({
+    ...cat,
+    sequence: idx + 1,
+  }));
+};
+
 const FireworksProductsCRUD = ({ onLogout }) => {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(getStoredCategories);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -51,7 +153,13 @@ const FireworksProductsCRUD = ({ onLogout }) => {
   // Category Modal State
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryModalMode, setCategoryModalMode] = useState('add'); // 'add' or 'edit'
-  const [categoryFormData, setCategoryFormData] = useState({ id: '', name: '', sequence: '' });
+  const [categoryFormData, setCategoryFormData] = useState({
+    id: '',
+    originalName: '',
+    name: '',
+    originalSequence: '',
+    sequence: '',
+  });
   const [categoryError, setCategoryError] = useState('');
 
   // Auto-hide success/error messages
@@ -69,20 +177,21 @@ const FireworksProductsCRUD = ({ onLogout }) => {
   const fetchCategories = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/categories`);
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      const data = await response.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const sorted = [...data].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
-        setCategories(sorted);
-        return sorted;
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const sorted = [...data].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+          setCategories(sorted);
+          persistCategories(sorted);
+          return sorted;
+        }
       }
-      setCategories(DEFAULT_CATEGORIES);
-      return DEFAULT_CATEGORIES;
     } catch (err) {
-      console.warn('Using default categories:', err);
-      setCategories(DEFAULT_CATEGORIES);
-      return DEFAULT_CATEGORIES;
+      console.warn('API categories not reachable, using local storage:', err);
     }
+    const local = getStoredCategories();
+    setCategories(local);
+    return local;
   };
 
   // Fetch products from API
@@ -258,7 +367,13 @@ const FireworksProductsCRUD = ({ onLogout }) => {
   // Category Management Handlers
   const handleOpenAddCategory = () => {
     const maxSeq = categories.reduce((max, c) => Math.max(max, c.sequence || 0), 0);
-    setCategoryFormData({ id: '', name: '', sequence: (maxSeq + 1).toString() });
+    setCategoryFormData({
+      id: '',
+      originalName: '',
+      name: '',
+      originalSequence: '',
+      sequence: (maxSeq + 1).toString(),
+    });
     setCategoryModalMode('add');
     setCategoryError('');
     setShowCategoryModal(true);
@@ -266,30 +381,23 @@ const FireworksProductsCRUD = ({ onLogout }) => {
 
   const handleOpenEditCategory = (targetName = null) => {
     const catNameToEdit = targetName || formData.productType || filterType;
-    if (!catNameToEdit) {
-      if (categories.length > 0) {
-        const first = categories[0];
-        setCategoryFormData({
-          id: first._id || '',
-          name: first.name,
-          sequence: (first.sequence ?? 1).toString(),
-        });
-        setCategoryModalMode('edit');
-        setCategoryError('');
-        setShowCategoryModal(true);
-        return;
-      }
-      setError('Please select a category from the dropdown to edit.');
+    let selectedCat = null;
+    if (catNameToEdit) {
+      selectedCat = categories.find((c) => c.name === catNameToEdit);
+    }
+    if (!selectedCat && categories.length > 0) {
+      selectedCat = categories[0];
+    }
+    if (!selectedCat) {
+      setError('Please select or create a category first.');
       return;
     }
-    const current = categories.find((c) => c.name === catNameToEdit) || {
-      name: catNameToEdit,
-      sequence: 1,
-    };
     setCategoryFormData({
-      id: current._id || '',
-      name: current.name,
-      sequence: (current.sequence ?? 1).toString(),
+      id: selectedCat._id || '',
+      originalName: selectedCat.name,
+      name: selectedCat.name,
+      originalSequence: (selectedCat.sequence ?? 1).toString(),
+      sequence: (selectedCat.sequence ?? 1).toString(),
     });
     setCategoryModalMode('edit');
     setCategoryError('');
@@ -307,27 +415,22 @@ const FireworksProductsCRUD = ({ onLogout }) => {
     }
 
     const current = categories.find((c) => c.name === catNameToDelete);
-    try {
-      if (current && current._id) {
-        const res = await fetch(`${API_BASE_URL}/categories/${current._id}`, {
-          method: 'DELETE',
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || 'Failed to delete category');
-        }
-      }
-      setSuccess(`Category "${catNameToDelete}" deleted successfully!`);
-      if (formData.productType === catNameToDelete) {
-        setFormData((prev) => ({ ...prev, productType: '' }));
-      }
-      if (filterType === catNameToDelete) {
-        setFilterType('');
-      }
-      await fetchCategories();
-      fetchProducts();
-    } catch (err) {
-      setError('Failed to delete category: ' + err.message);
+    const updatedCategories = removeCategoryAndNormalize(categories, catNameToDelete);
+    setCategories(updatedCategories);
+    persistCategories(updatedCategories);
+
+    setSuccess(`Category "${catNameToDelete}" deleted successfully!`);
+    if (formData.productType === catNameToDelete) {
+      setFormData((prev) => ({ ...prev, productType: '' }));
+    }
+    if (filterType === catNameToDelete) {
+      setFilterType('');
+    }
+
+    if (current && current._id) {
+      fetch(`${API_BASE_URL}/categories/${current._id}`, {
+        method: 'DELETE',
+      }).catch((err) => console.warn('Backend category delete sync failed:', err));
     }
   };
 
@@ -340,56 +443,101 @@ const FireworksProductsCRUD = ({ onLogout }) => {
       return;
     }
     const seq = parseInt(categoryFormData.sequence, 10);
-    if (isNaN(seq) || seq < 0) {
-      setCategoryError('Please enter a valid sequence number (0 or higher).');
+    if (isNaN(seq) || seq <= 0) {
+      setCategoryError('Please enter a valid sequence number (1 or higher).');
       return;
     }
 
     try {
       if (categoryModalMode === 'add') {
-        const res = await fetch(`${API_BASE_URL}/categories`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: trimmedName, sequence: seq }),
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || 'Failed to create category');
+        if (categories.some((c) => c.name.toLowerCase() === trimmedName.toLowerCase())) {
+          setCategoryError(`Category "${trimmedName}" already exists.`);
+          return;
         }
+
+        const updatedCategories = insertCategoryAtSequence(categories, trimmedName, seq);
+        setCategories(updatedCategories);
+        persistCategories(updatedCategories);
+
         setSuccess(`Category "${trimmedName}" created successfully!`);
         setShowCategoryModal(false);
         setFormData((prev) => ({ ...prev, productType: trimmedName }));
         setFilterType(trimmedName);
-        await fetchCategories();
-      } else {
-        const origId = categoryFormData.id;
-        const origCategory = categories.find((c) => c._id === origId || c.name === categoryFormData.name);
-        const categoryId = origId || origCategory?._id;
 
-        if (categoryId) {
-          const res = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+        fetch(`${API_BASE_URL}/categories`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedName, sequence: seq }),
+        })
+          .then(async (res) => {
+            if (res.ok) {
+              const created = await res.json();
+              if (created && created._id) {
+                setCategories((prev) => {
+                  const withId = prev.map((c) => (c.name === trimmedName ? { ...c, _id: created._id } : c));
+                  persistCategories(withId);
+                  return withId;
+                });
+              }
+            }
+          })
+          .catch((err) => console.warn('Backend category create sync failed:', err));
+      } else {
+        const targetId = categoryFormData.id;
+        const targetOrigName = categoryFormData.originalName || categoryFormData.name;
+        const oldSeq = parseInt(categoryFormData.originalSequence, 10);
+
+        const duplicate = categories.find(
+          (c) =>
+            c.name.toLowerCase() === trimmedName.toLowerCase() &&
+            c.name.toLowerCase() !== targetOrigName.toLowerCase()
+        );
+        if (duplicate) {
+          setCategoryError(`Category "${trimmedName}" already exists.`);
+          return;
+        }
+
+        const updatedCategories = reorderCategoryList(
+          categories,
+          { id: targetId, originalName: targetOrigName, name: targetOrigName },
+          oldSeq,
+          seq,
+          trimmedName
+        );
+
+        setCategories(updatedCategories);
+        persistCategories(updatedCategories);
+
+        // If category was renamed, update products referencing the old name
+        if (targetOrigName !== trimmedName) {
+          setProducts((prev) =>
+            prev.map((p) => (p.productType === targetOrigName ? { ...p, productType: trimmedName } : p))
+          );
+          if (formData.productType === targetOrigName) {
+            setFormData((prev) => ({ ...prev, productType: trimmedName }));
+          }
+          if (filterType === targetOrigName) {
+            setFilterType(trimmedName);
+          }
+        }
+
+        setSuccess(`Category "${trimmedName}" updated successfully!`);
+        setShowCategoryModal(false);
+
+        const currentTarget = categories.find(
+          (c) => (targetId && c._id === targetId) || c.name === targetOrigName
+        );
+        const backendId = targetId || currentTarget?._id;
+        if (backendId) {
+          fetch(`${API_BASE_URL}/categories/${backendId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: trimmedName, sequence: seq }),
-          });
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || 'Failed to update category');
-          }
+          }).catch((err) => console.warn('Backend category update sync failed:', err));
         }
-        setSuccess(`Category "${trimmedName}" updated successfully!`);
-        setShowCategoryModal(false);
-        if (origCategory && formData.productType === origCategory.name) {
-          setFormData((prev) => ({ ...prev, productType: trimmedName }));
-        }
-        if (origCategory && filterType === origCategory.name) {
-          setFilterType(trimmedName);
-        }
-        await fetchCategories();
-        fetchProducts();
       }
     } catch (err) {
-      setCategoryError(err.message);
+      setCategoryError(err.message || 'Failed to save category');
     }
   };
 
@@ -547,7 +695,7 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                     <option value="">All Categories</option>
                     {categories.map((cat) => (
                       <option key={cat._id || cat.name} value={cat.name}>
-                        {cat.name} {cat.sequence !== undefined ? `(#${cat.sequence})` : ''}
+                        {cat.name}
                       </option>
                     ))}
                   </select>
@@ -583,7 +731,7 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                     title="Add new category"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>+ Add New</span>
+                    <span>Add New</span>
                   </button>
                 </div>
               </div>
@@ -813,7 +961,7 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                         <option value="">Select a category</option>
                         {categories.map(cat => (
                           <option key={cat._id || cat.name} value={cat.name}>
-                            {cat.name} {cat.sequence !== undefined ? `(#${cat.sequence})` : ''}
+                            {cat.name}
                           </option>
                         ))}
                       </select>
@@ -849,7 +997,7 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                         title="Add new category"
                       >
                         <Plus className="w-4 h-4" />
-                        <span>+ Add New</span>
+                        <span>Add New</span>
                       </button>
                     </div>
                   </div>
@@ -963,14 +1111,16 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                         Select Category to Edit
                       </label>
                       <select
-                        value={categoryFormData.id || categoryFormData.name}
+                        value={categoryFormData.originalName || categoryFormData.name}
                         onChange={(e) => {
                           const val = e.target.value;
-                          const selected = categories.find((c) => c._id === val || c.name === val);
+                          const selected = categories.find((c) => (c._id && c._id === val) || c.name === val);
                           if (selected) {
                             setCategoryFormData({
                               id: selected._id || '',
+                              originalName: selected.name,
                               name: selected.name,
+                              originalSequence: (selected.sequence ?? 1).toString(),
                               sequence: (selected.sequence ?? 1).toString(),
                             });
                           }
@@ -978,8 +1128,8 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                         className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-all bg-white"
                       >
                         {categories.map((c) => (
-                          <option key={c._id || c.name} value={c._id || c.name}>
-                            {c.name} {c.sequence !== undefined ? `(#${c.sequence})` : ''}
+                          <option key={c._id || c.name} value={c.name}>
+                            {c.name}
                           </option>
                         ))}
                       </select>

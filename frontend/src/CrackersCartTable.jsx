@@ -2,6 +2,49 @@ import React, { useState, useEffect } from "react";
 import { ShoppingCart, X, Plus, Minus, ShoppingBag, Search } from "lucide-react";
 import generateBill from "../src/generateBill.js";
 
+const STORAGE_KEY = 'fireworks_categories_data';
+
+const DEFAULT_CATEGORIES = [
+  'ONE SOUND CRACKERS',
+  'FLOWER POTS',
+  'GROUND CHAKKAR',
+  'ROCKETS',
+  'TWINKLING STAR',
+  'ELECTRIC CRACKERS',
+  'DELUXE CRACKERS',
+  'SPECIAL GARLANDS',
+  'BIJILI',
+  'BOMBS',
+  'PENCIL',
+  'SPARKLERS',
+  'FANCY FOUNTAINS',
+  'MUSICAL ITEMS',
+  'AERIAL FANCY',
+  'AERIAL FANCY SHOTS',
+  'AERIAL MULTI SHOTS FANCY',
+  'SPECIAL FANCY FOUNTAIN',
+  'SPECIAL FOUNTAINS',
+  'NEW ARRIVAL FOUNTAINS',
+  'CHILDRENS FANCY',
+  'CAPS & SERPENT',
+  'GIFT BOXES'
+].map((name, index) => ({ name, sequence: index + 1 }));
+
+const getStoredCategories = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return [...parsed].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+      }
+    }
+  } catch (e) {
+    console.error('Failed to read categories from storage:', e);
+  }
+  return DEFAULT_CATEGORIES;
+};
+
 const CrackersCartTable = ({
   products,
   quantities,
@@ -23,36 +66,22 @@ const CrackersCartTable = ({
   const [searchQueryByName, setSearchQueryByName] = useState("");
   const [searchQueryBySno, setSearchQueryBySno] = useState("");
 
-  const [categories, setCategories] = useState(
-    [
-      'ONE SOUND CRACKERS',
-      'FLOWER POTS',
-      'GROUND CHAKKAR',
-      'ROCKETS',
-      'TWINKLING STAR',
-      'ELECTRIC CRACKERS',
-      'DELUXE CRACKERS',
-      'SPECIAL GARLANDS',
-      'BIJILI',
-      'BOMBS',
-      'PENCIL',
-      'SPARKLERS',
-      'FANCY FOUNTAINS',
-      'MUSICAL ITEMS',
-      'AERIAL FANCY',
-      'AERIAL FANCY SHOTS',
-      'AERIAL MULTI SHOTS FANCY',
-      'SPECIAL FANCY FOUNTAIN',
-      'SPECIAL FOUNTAINS',
-      'NEW ARRIVAL FOUNTAINS',
-      'CHILDRENS FANCY',
-      'CAPS & SERPENT',
-      'GIFT BOXES'
-    ].map((name, index) => ({ name, sequence: index + 1 }))
-  );
+  const [categories, setCategories] = useState(getStoredCategories);
 
-  // Fetch categories to sort by sequence number
+  // Fetch categories to sort by sequence number and listen to real-time admin reordering
   useEffect(() => {
+    const updateFromStorage = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCategories([...parsed].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0)));
+          }
+        }
+      } catch (e) {}
+    };
+
     const fetchCategories = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/categories`);
@@ -61,13 +90,25 @@ const CrackersCartTable = ({
           if (Array.isArray(data) && data.length > 0) {
             const sorted = [...data].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
             setCategories(sorted);
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
+            } catch (e) {}
           }
         }
       } catch (err) {
         console.warn('Failed to fetch categories:', err);
       }
     };
+
     fetchCategories();
+
+    window.addEventListener('storage', updateFromStorage);
+    window.addEventListener('categoriesUpdated', updateFromStorage);
+
+    return () => {
+      window.removeEventListener('storage', updateFromStorage);
+      window.removeEventListener('categoriesUpdated', updateFromStorage);
+    };
   }, []);
 
   const groupByCategory = (productsList) => {
