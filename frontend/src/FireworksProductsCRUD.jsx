@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, Filter, X, Save, XCircle, Package, LogOut, User } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Filter, X, Save, XCircle, Package, LogOut, User, ChevronDown } from 'lucide-react';
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL;
 
-
-
-const productTypes = [
+const DEFAULT_CATEGORIES = [
   'ONE SOUND CRACKERS',
   'FLOWER POTS',
   'GROUND CHAKKAR',
@@ -28,10 +26,11 @@ const productTypes = [
   'CHILDRENS FANCY',
   'CAPS & SERPENT',
   'GIFT BOXES'
-];
+].map((name, index) => ({ name, sequence: index + 1 }));
 
 const FireworksProductsCRUD = ({ onLogout }) => {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -49,6 +48,12 @@ const FireworksProductsCRUD = ({ onLogout }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Category Modal State
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryModalMode, setCategoryModalMode] = useState('add'); // 'add' or 'edit'
+  const [categoryFormData, setCategoryFormData] = useState({ id: '', name: '', sequence: '' });
+  const [categoryError, setCategoryError] = useState('');
+
   // Auto-hide success/error messages
   useEffect(() => {
     if (success || error) {
@@ -59,6 +64,26 @@ const FireworksProductsCRUD = ({ onLogout }) => {
       return () => clearTimeout(timer);
     }
   }, [success, error]);
+
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`);
+      if (!response.ok) throw new Error('Failed to fetch categories');
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const sorted = [...data].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+        setCategories(sorted);
+        return sorted;
+      }
+      setCategories(DEFAULT_CATEGORIES);
+      return DEFAULT_CATEGORIES;
+    } catch (err) {
+      console.warn('Using default categories:', err);
+      setCategories(DEFAULT_CATEGORIES);
+      return DEFAULT_CATEGORIES;
+    }
+  };
 
   // Fetch products from API
   const fetchProducts = async () => {
@@ -81,9 +106,10 @@ const FireworksProductsCRUD = ({ onLogout }) => {
     }
   };
 
-  // Load products on component mount
+  // Load products and categories on component mount
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   // Search and filter products
@@ -229,6 +255,144 @@ const FireworksProductsCRUD = ({ onLogout }) => {
     setFilterType('');
   };
 
+  // Category Management Handlers
+  const handleOpenAddCategory = () => {
+    const maxSeq = categories.reduce((max, c) => Math.max(max, c.sequence || 0), 0);
+    setCategoryFormData({ id: '', name: '', sequence: (maxSeq + 1).toString() });
+    setCategoryModalMode('add');
+    setCategoryError('');
+    setShowCategoryModal(true);
+  };
+
+  const handleOpenEditCategory = (targetName = null) => {
+    const catNameToEdit = targetName || formData.productType || filterType;
+    if (!catNameToEdit) {
+      if (categories.length > 0) {
+        const first = categories[0];
+        setCategoryFormData({
+          id: first._id || '',
+          name: first.name,
+          sequence: (first.sequence ?? 1).toString(),
+        });
+        setCategoryModalMode('edit');
+        setCategoryError('');
+        setShowCategoryModal(true);
+        return;
+      }
+      setError('Please select a category from the dropdown to edit.');
+      return;
+    }
+    const current = categories.find((c) => c.name === catNameToEdit) || {
+      name: catNameToEdit,
+      sequence: 1,
+    };
+    setCategoryFormData({
+      id: current._id || '',
+      name: current.name,
+      sequence: (current.sequence ?? 1).toString(),
+    });
+    setCategoryModalMode('edit');
+    setCategoryError('');
+    setShowCategoryModal(true);
+  };
+
+  const handleDeleteCategory = async (targetName = null) => {
+    const catNameToDelete = targetName || formData.productType || filterType;
+    if (!catNameToDelete) {
+      setError('Please select a category from the dropdown to delete.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete category "${catNameToDelete}"?`)) {
+      return;
+    }
+
+    const current = categories.find((c) => c.name === catNameToDelete);
+    try {
+      if (current && current._id) {
+        const res = await fetch(`${API_BASE_URL}/categories/${current._id}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Failed to delete category');
+        }
+      }
+      setSuccess(`Category "${catNameToDelete}" deleted successfully!`);
+      if (formData.productType === catNameToDelete) {
+        setFormData((prev) => ({ ...prev, productType: '' }));
+      }
+      if (filterType === catNameToDelete) {
+        setFilterType('');
+      }
+      await fetchCategories();
+      fetchProducts();
+    } catch (err) {
+      setError('Failed to delete category: ' + err.message);
+    }
+  };
+
+  const handleCategorySubmit = async (e) => {
+    e.preventDefault();
+    setCategoryError('');
+    const trimmedName = categoryFormData.name.trim();
+    if (!trimmedName) {
+      setCategoryError('Category name is required.');
+      return;
+    }
+    const seq = parseInt(categoryFormData.sequence, 10);
+    if (isNaN(seq) || seq < 0) {
+      setCategoryError('Please enter a valid sequence number (0 or higher).');
+      return;
+    }
+
+    try {
+      if (categoryModalMode === 'add') {
+        const res = await fetch(`${API_BASE_URL}/categories`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedName, sequence: seq }),
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Failed to create category');
+        }
+        setSuccess(`Category "${trimmedName}" created successfully!`);
+        setShowCategoryModal(false);
+        setFormData((prev) => ({ ...prev, productType: trimmedName }));
+        setFilterType(trimmedName);
+        await fetchCategories();
+      } else {
+        const origId = categoryFormData.id;
+        const origCategory = categories.find((c) => c._id === origId || c.name === categoryFormData.name);
+        const categoryId = origId || origCategory?._id;
+
+        if (categoryId) {
+          const res = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: trimmedName, sequence: seq }),
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || 'Failed to update category');
+          }
+        }
+        setSuccess(`Category "${trimmedName}" updated successfully!`);
+        setShowCategoryModal(false);
+        if (origCategory && formData.productType === origCategory.name) {
+          setFormData((prev) => ({ ...prev, productType: trimmedName }));
+        }
+        if (origCategory && filterType === origCategory.name) {
+          setFilterType(trimmedName);
+        }
+        await fetchCategories();
+        fetchProducts();
+      }
+    } catch (err) {
+      setCategoryError(err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section with Logout */}
@@ -326,8 +490,8 @@ const FireworksProductsCRUD = ({ onLogout }) => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Product Types</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{productTypes.length}</p>
+                <p className="text-sm font-medium text-gray-600">Categories</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{categories.length}</p>
               </div>
               <div className="p-3 bg-green-50 rounded-full">
                 <Filter className="w-6 h-6 text-green-600" />
@@ -352,8 +516,8 @@ const FireworksProductsCRUD = ({ onLogout }) => {
 
         {/* Controls Section */}
         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto items-start sm:items-center flex-wrap">
               {/* Search */}
               <div className="relative w-full sm:w-72">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -368,43 +532,86 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                 />
               </div>
 
-              {/* Filter */}
-              <div className="relative w-full sm:w-56">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Filter className="text-gray-400 w-5 h-5" />
+              {/* Category Dropdown with Edit, Delete, + Add New (Directly on the Admin Page) */}
+              <div className="w-full sm:w-80">
+                <label htmlFor="adminCategoryFilter" className="block text-sm font-semibold text-gray-800 mb-1">
+                  Category
+                </label>
+                <div className="relative">
+                  <select
+                    id="adminCategoryFilter"
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none text-gray-800 bg-white transition-all pr-10 shadow-sm font-medium"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((cat) => (
+                      <option key={cat._id || cat.name} value={cat.name}>
+                        {cat.name} {cat.sequence !== undefined ? `(#${cat.sequence})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
                 </div>
-                <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="pl-10 w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none text-gray-700 bg-white transition-all"
-                >
-                  <option value="">All product types</option>
-                  {productTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+
+                {/* Buttons directly under Category dropdown matching screenshot */}
+                <div className="flex items-center justify-end gap-3.5 mt-2 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditCategory(filterType)}
+                    className="inline-flex items-center gap-1.5 text-amber-600 hover:text-amber-700 font-semibold transition-colors cursor-pointer"
+                    title="Edit selected category"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCategory(filterType)}
+                    className="inline-flex items-center gap-1.5 text-red-600 hover:text-red-700 font-semibold transition-colors cursor-pointer"
+                    title="Delete selected category"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddCategory}
+                    className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors cursor-pointer"
+                    title="Add new category"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add New</span>
+                  </button>
+                </div>
               </div>
 
               {/* Clear Filters */}
               {(searchTerm || filterType) && (
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center gap-2 px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all border border-gray-200"
-                >
-                  <X className="w-4 h-4" />
-                  Clear
-                </button>
+                <div className="self-start sm:self-center">
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center gap-2 px-4 py-2.5 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all border border-gray-200"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear
+                  </button>
+                </div>
               )}
             </div>
 
             {/* Add Product Button */}
-            <button
-              onClick={() => openModal()}
-              className="w-full lg:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-lg transition-all font-medium shadow-sm hover:shadow-md"
-            >
-              <Plus className="w-5 h-5" />
-              Add Product
-            </button>
+            <div className="w-full lg:w-auto self-start lg:self-center">
+              <button
+                onClick={() => openModal()}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2.5 rounded-lg transition-all font-medium shadow-sm hover:shadow-md"
+              >
+                <Plus className="w-5 h-5" />
+                Add Product
+              </button>
+            </div>
           </div>
         </div>
 
@@ -589,24 +796,62 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                     />
                   </div>
 
-                  {/* Product Type Dropdown */}
+                  {/* Category Dropdown */}
                   <div>
                     <label htmlFor="productType" className="block text-sm font-medium text-gray-700 mb-2">
-                      Product Type *
+                      Category *
                     </label>
-                    <select
-                      id="productType"
-                      name="productType"
-                      value={formData.productType}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 appearance-none transition-all"
-                    >
-                      <option value="">Select a product type</option>
-                      {productTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        id="productType"
+                        name="productType"
+                        value={formData.productType}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 appearance-none transition-all pr-10 bg-white"
+                      >
+                        <option value="">Select a category</option>
+                        {categories.map(cat => (
+                          <option key={cat._id || cat.name} value={cat.name}>
+                            {cat.name} {cat.sequence !== undefined ? `(#${cat.sequence})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                        <ChevronDown className="w-5 h-5" />
+                      </div>
+                    </div>
+
+                    {/* Action buttons matching reference screenshot */}
+                    <div className="flex items-center justify-end gap-4 mt-2.5 text-sm">
+                      <button
+                        type="button"
+                        onClick={handleOpenEditCategory}
+                        className="inline-flex items-center gap-1.5 text-amber-600 hover:text-amber-700 font-medium transition-colors cursor-pointer"
+                        title="Edit selected category"
+                      >
+                        <Edit className="w-4 h-4" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteCategory}
+                        className="inline-flex items-center gap-1.5 text-red-600 hover:text-red-700 font-medium transition-colors cursor-pointer"
+                        title="Delete selected category"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddCategory}
+                        className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-medium transition-colors cursor-pointer"
+                        title="Add new category"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>+ Add New</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Description */}
@@ -676,6 +921,123 @@ const FireworksProductsCRUD = ({ onLogout }) => {
                           {editingProduct ? 'Update Product' : 'Create Product'}
                         </>
                       )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Category Modal (Add / Edit Category) */}
+        {showCategoryModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60] animate-fade-in">
+            <div className="bg-white rounded-xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-5">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {categoryModalMode === 'add' ? 'Add New Category' : 'Edit Category'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCategoryModal(false);
+                      setCategoryError('');
+                    }}
+                    className="text-gray-400 hover:text-gray-600 rounded-full p-1.5 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {categoryError && (
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
+                    {categoryError}
+                  </div>
+                )}
+
+                <form onSubmit={handleCategorySubmit} className="space-y-4">
+                  {categoryModalMode === 'edit' && categories.length > 1 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Select Category to Edit
+                      </label>
+                      <select
+                        value={categoryFormData.id || categoryFormData.name}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const selected = categories.find((c) => c._id === val || c.name === val);
+                          if (selected) {
+                            setCategoryFormData({
+                              id: selected._id || '',
+                              name: selected.name,
+                              sequence: (selected.sequence ?? 1).toString(),
+                            });
+                          }
+                        }}
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-all bg-white"
+                      >
+                        {categories.map((c) => (
+                          <option key={c._id || c.name} value={c._id || c.name}>
+                            {c.name} {c.sequence !== undefined ? `(#${c.sequence})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={categoryFormData.name}
+                      onChange={(e) =>
+                        setCategoryFormData((prev) => ({ ...prev, name: e.target.value }))
+                      }
+                      required
+                      placeholder="e.g. FLOWER POTS"
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Sequence Number *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={categoryFormData.sequence}
+                      onChange={(e) =>
+                        setCategoryFormData((prev) => ({ ...prev, sequence: e.target.value }))
+                      }
+                      required
+                      placeholder="e.g. 1"
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 transition-all"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Lower sequence numbers appear first on the customer page (e.g. 1, 2, 3...).
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCategoryModal(false);
+                        setCategoryError('');
+                      }}
+                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-lg font-medium shadow-sm transition-all"
+                    >
+                      {categoryModalMode === 'add' ? 'Create Category' : 'Save Changes'}
                     </button>
                   </div>
                 </form>

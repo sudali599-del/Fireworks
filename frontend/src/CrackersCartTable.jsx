@@ -23,31 +23,52 @@ const CrackersCartTable = ({
   const [searchQueryByName, setSearchQueryByName] = useState("");
   const [searchQueryBySno, setSearchQueryBySno] = useState("");
 
-  const productTypes = [
-    'ONE SOUND CRACKERS',
-    'FLOWER POTS',
-    'GROUND CHAKKAR',
-    'ROCKETS',
-    'TWINKLING STAR',
-    'ELECTRIC CRACKERS',
-    'DELUXE CRACKERS',
-    'SPECIAL GARLANDS',
-    'BIJILI',
-    'BOMBS',
-    'PENCIL',
-    'SPARKLERS',
-    'FANCY FOUNTAINS',
-    'MUSICAL ITEMS',
-    'AERIAL FANCY',
-    'AERIAL FANCY SHOTS',
-    'AERIAL MULTI SHOTS FANCY',
-    'SPECIAL FANCY FOUNTAIN',
-    'SPECIAL FOUNTAINS',
-    'NEW ARRIVAL FOUNTAINS',
-    'CHILDRENS FANCY',
-    'CAPS & SERPENT',
-    'GIFT BOXES'
-  ];
+  const [categories, setCategories] = useState(
+    [
+      'ONE SOUND CRACKERS',
+      'FLOWER POTS',
+      'GROUND CHAKKAR',
+      'ROCKETS',
+      'TWINKLING STAR',
+      'ELECTRIC CRACKERS',
+      'DELUXE CRACKERS',
+      'SPECIAL GARLANDS',
+      'BIJILI',
+      'BOMBS',
+      'PENCIL',
+      'SPARKLERS',
+      'FANCY FOUNTAINS',
+      'MUSICAL ITEMS',
+      'AERIAL FANCY',
+      'AERIAL FANCY SHOTS',
+      'AERIAL MULTI SHOTS FANCY',
+      'SPECIAL FANCY FOUNTAIN',
+      'SPECIAL FOUNTAINS',
+      'NEW ARRIVAL FOUNTAINS',
+      'CHILDRENS FANCY',
+      'CAPS & SERPENT',
+      'GIFT BOXES'
+    ].map((name, index) => ({ name, sequence: index + 1 }))
+  );
+
+  // Fetch categories to sort by sequence number
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/categories`);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const sorted = [...data].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+            setCategories(sorted);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const groupByCategory = (productsList) => {
     const grouped = productsList.reduce((acc, product) => {
@@ -59,15 +80,21 @@ const CrackersCartTable = ({
       return acc;
     }, {});
 
+    // Sort categories based on their sequence number (ascending: 1, 2, 3...)
+    const sortedCategories = [...categories].sort(
+      (a, b) => (a.sequence ?? 0) - (b.sequence ?? 0)
+    );
+    const sortedCategoryNames = sortedCategories.map((c) => c.name);
+
     const orderedGrouped = {};
-    productTypes.forEach(type => {
+    sortedCategoryNames.forEach(type => {
       if (grouped[type]) {
         orderedGrouped[type] = grouped[type];
       }
     });
 
     Object.keys(grouped).forEach(category => {
-      if (!productTypes.includes(category)) {
+      if (!sortedCategoryNames.includes(category)) {
         orderedGrouped[category] = grouped[category];
       }
     });
