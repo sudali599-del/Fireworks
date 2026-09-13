@@ -63,18 +63,7 @@ export default async function generateBill(products, phone, email, billDiscount 
  );
 
  // Calculate discounted total
- const discountedTotal = (() => {
-  // Separate GIFT BOXES and other products
-  const giftBoxTotal = products
-    .filter(p => (p.productType || p.type || "").toUpperCase() === "GIFT BOXES")
-    .reduce(
-      (acc, p) => acc + Number(p.actualPrice ?? 0) * (p.selectedQuantity || p.quantity || p.qty || p.defaultQuantity || 1),
-      0
-    );
-  const otherTotal = grandTotal - giftBoxTotal;
-  // Apply discount only to non-GIFT BOXES products
-  return giftBoxTotal + (otherTotal * (billDiscount > 0 ? (1 - billDiscount / 100) : 1));
-})();
+ const discountedTotal = grandTotal * (billDiscount > 0 ? (1 - billDiscount / 100) : 1);
 
  // AUTOTABLE
  autoTable(doc, {
@@ -120,7 +109,7 @@ export default async function generateBill(products, phone, email, billDiscount 
 
  if (billDiscount > 0) {
   doc.setFontSize(13);
-  doc.text(`Discount Applied: ${billDiscount}% (Not applied for GIFT BOXES)`, pageWidth - margin, finalY + 65, { align: 'right' });
+  doc.text(`Discount Applied: ${billDiscount}%`, pageWidth - margin, finalY + 65, { align: 'right' });
   doc.setFontSize(14);
   doc.text(`Discounted Total: ${discountedTotal.toFixed(2)} INR`, pageWidth - margin, finalY + 90, { align: 'right' });
  }
